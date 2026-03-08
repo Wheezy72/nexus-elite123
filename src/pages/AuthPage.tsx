@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,28 @@ const AuthPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleAvailable, setGoogleAvailable] = useState(true);
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw result.error;
+    } catch (err: any) {
+      const msg = err.message || '';
+      // If Google OAuth isn't configured, hide the button gracefully
+      if (msg.toLowerCase().includes('provider') || msg.toLowerCase().includes('oauth') || msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('unsupported')) {
+        setGoogleAvailable(false);
+        toast.info('Google sign-in not available — use email instead');
+      } else {
+        toast.error(msg || 'Google sign-in failed');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,18 +68,8 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  const handleGoogle = async () => {
-    setLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) throw result.error;
-    } catch (err: any) {
-      toast.error(err.message || 'Google sign-in failed');
-      setLoading(false);
-    }
-  };
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -90,7 +102,7 @@ const AuthPage: React.FC = () => {
           </p>
 
           {/* Google Sign In */}
-          {mode !== 'forgot' && (
+          {mode !== 'forgot' && googleAvailable && (
             <>
               <motion.button
                 whileTap={{ scale: 0.98 }}

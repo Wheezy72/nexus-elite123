@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Upload, X, CloudRain, Wind, Trees, Radio, Music } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Upload, X, CloudRain, Wind, Trees, Radio, Music, Bell } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { startAudio, stopAudio, updateAudio, pauseAudio, resumeAudio, getIsPlaying, type AudioConfig, type NoiseType } from '@/lib/audioEngine';
+import { requestNotificationPermission, sendTimerNotification, setTabBadge, resetTabTitle, playAlertChime, playWarningTick } from '@/lib/timerNotifications';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 
@@ -53,6 +54,7 @@ const FlowEngine: React.FC = () => {
   const [customAudioName, setCustomAudioName] = useState<string | null>(null);
   const [customVolume, setCustomVolume] = useLocalStorage<number>('nexus-custom-vol', 50);
   const [audioOn, setAudioOn] = useState(false);
+  const [notificationsOn, setNotificationsOn] = useLocalStorage<boolean>('nexus-notif-on', true);
 
   // Custom audio per channel
   const [uploadChannel, setUploadChannel] = useState<NoiseType | 'custom'>('custom');
@@ -60,6 +62,7 @@ const FlowEngine: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const sessionStart = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const warningFiredRef = useRef(false);
 
   const totalTime = (isFocus ? focusMin : breakMin) * 60;
   const progress = 1 - timeLeft / totalTime;
@@ -91,7 +94,10 @@ const FlowEngine: React.FC = () => {
   const startTimer = useCallback(() => {
     setIsRunning(true);
     sessionStart.current = Date.now();
-  }, []);
+    warningFiredRef.current = false;
+    resetTabTitle();
+    if (notificationsOn) requestNotificationPermission();
+  }, [notificationsOn]);
 
   const pauseTimer = useCallback(() => {
     setIsRunning(false);
@@ -99,6 +105,8 @@ const FlowEngine: React.FC = () => {
 
   const resetTimer = useCallback(() => {
     setIsRunning(false);
+    warningFiredRef.current = false;
+    resetTabTitle();
     setTimeLeft((isFocus ? focusMin : breakMin) * 60);
   }, [isFocus, focusMin, breakMin]);
 
@@ -115,6 +123,17 @@ const FlowEngine: React.FC = () => {
     }
     intervalRef.current = window.setInterval(() => {
       setTimeLeft(prev => {
+        // Warning at 60s remaining
+        if (prev === 61 && !warningFiredRef.current && notificationsOn) {
+          warningFiredRef.current = true;
+          playWarningTick();
+          setTabBadge(true, isFocus ? 'Focus ending' : 'Break ending');
+          sendTimerNotification(
+            isFocus ? '⏰ Focus ending soon!' : '☕ Break ending soon!',
+            'One minute remaining — wrap up!'
+          );
+        }
+
         if (prev <= 1) {
           const elapsed = Math.round((Date.now() - sessionStart.current) / 1000);
           setSessions(s => [...s, {
@@ -123,7 +142,21 @@ const FlowEngine: React.FC = () => {
             duration: elapsed,
             type: isFocus ? 'focus' : 'break',
           }]);
+          
+          // Completion notification + chime
+          if (notificationsOn) {
+            playAlertChime();
+            sendTimerNotification(
+              isFocus ? '✅ Focus session complete!' : '🎉 Break over!',
+              isFocus ? 'Time for a break.' : 'Back to focus!'
+            );
+            setTabBadge(true, isFocus ? 'Session done' : 'Break done');
+            // Clear badge after 5s
+            setTimeout(() => resetTabTitle(), 5000);
+          }
+
           setIsRunning(false);
+          warningFiredRef.current = false;
           const nextIsFocus = !isFocus;
           setIsFocus(nextIsFocus);
           return (nextIsFocus ? focusMin : breakMin) * 60;
@@ -132,7 +165,7 @@ const FlowEngine: React.FC = () => {
       });
     }, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isRunning, isFocus, setSessions, focusMin, breakMin]);
+  }, [isRunning, isFocus, setSessions, focusMin, breakMin, notificationsOn]);
 
   const toggleAudio = () => {
     if (audioOn) {
@@ -171,6 +204,7 @@ const FlowEngine: React.FC = () => {
   useEffect(() => () => {
     if (getIsPlaying()) stopAudio();
     if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+    resetTabTitle();
   }, []);
 
   const mins = Math.floor(timeLeft / 60);
@@ -255,10 +289,28 @@ const FlowEngine: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Circular SVG timer */}
-      <div className="relative w-[160px] h-[160px] sm:w-[200px] sm:h-[200px]">
+      {/* Circular SVG timer with breathing effect */}
+      <motion.div 
+        className="relative w-[160px] h-[160px] sm:w-[200px] sm:h-[200px]"
+        animate={isRunning ? {
+          scale: [1, 1.03, 1],
+          filter: ['drop-shadow(0 0 8px hsl(var(--primary) / 0.2))', 'drop-shadow(0 0 20px hsl(var(--primary) / 0.4))', 'drop-shadow(0 0 8px hsl(var(--primary) / 0.2))'],
+        } : { scale: 1, filter: 'drop-shadow(0 0 0px transparent)' }}
+        transition={isRunning ? { duration: 4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
+      >
         <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
-          <circle cx="100" cy="100" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+          {/* Outer glow ring */}
+          {isRunning && (
+            <motion.circle
+              cx="100" cy="100" r={radius + 6} fill="none"
+              stroke="hsl(var(--primary))"
+              strokeWidth="1"
+              opacity={0.15}
+              animate={{ opacity: [0.08, 0.2, 0.08], r: [radius + 4, radius + 8, radius + 4] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          )}
+          <circle cx="100" cy="100" r={radius} fill="none" stroke="hsl(var(--muted) / 0.15)" strokeWidth="6" />
           <motion.circle
             cx="100" cy="100" r={radius} fill="none"
             stroke="hsl(var(--primary))"
@@ -268,16 +320,30 @@ const FlowEngine: React.FC = () => {
             strokeDashoffset={strokeOffset}
             style={{ transition: 'stroke-dashoffset 0.5s ease' }}
           />
+          {/* Pulsing dot at progress head */}
+          {isRunning && progress > 0.01 && (
+            <motion.circle
+              cx={100 + radius * Math.cos(2 * Math.PI * progress - Math.PI / 2)}
+              cy={100 + radius * Math.sin(2 * Math.PI * progress - Math.PI / 2)}
+              r="4" fill="hsl(var(--primary))"
+              animate={{ r: [3, 5, 3], opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          )}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl sm:text-4xl font-bold tabular-nums text-foreground">
+          <motion.span
+            className="text-3xl sm:text-4xl font-bold tabular-nums text-foreground"
+            animate={isRunning && timeLeft <= 60 ? { opacity: [1, 0.6, 1] } : { opacity: 1 }}
+            transition={timeLeft <= 60 ? { duration: 1, repeat: Infinity } : {}}
+          >
             {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
-          </span>
+          </motion.span>
           <span className="text-[10px] sm:text-[11px] text-muted-foreground mt-1">
             {sessions.filter(s => s.type === 'focus').length} sessions today
           </span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Controls */}
       <div className="flex gap-3">
@@ -286,7 +352,7 @@ const FlowEngine: React.FC = () => {
           whileHover={{ scale: 1.1 }}
           transition={{ type: 'spring', stiffness: 500, damping: 15 }}
           onClick={isRunning ? pauseTimer : startTimer}
-          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.3)]"
         >
           {isRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
         </motion.button>
@@ -303,6 +369,14 @@ const FlowEngine: React.FC = () => {
           className={`w-12 h-12 rounded-full glass flex items-center justify-center transition-colors ${audioOn ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
         >
           {audioOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.85 }}
+          onClick={() => setNotificationsOn(!notificationsOn)}
+          className={`w-12 h-12 rounded-full glass flex items-center justify-center transition-colors ${notificationsOn ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          title={notificationsOn ? 'Notifications on' : 'Notifications off'}
+        >
+          <Bell className={`w-5 h-5 ${notificationsOn ? '' : 'opacity-50'}`} />
         </motion.button>
       </div>
 
