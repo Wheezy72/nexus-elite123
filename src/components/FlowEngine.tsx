@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Upload, X, CloudRain, Wind, Trees, Radio } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Upload, X, CloudRain, Wind, Trees, Radio, Music } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { startAudio, stopAudio, updateAudio, pauseAudio, resumeAudio, getIsPlaying, type AudioConfig, type NoiseType } from '@/lib/audioEngine';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -11,6 +11,12 @@ interface FlowSession {
   startedAt: string;
   duration: number;
   type: 'focus' | 'break';
+}
+
+interface CustomChannelAudio {
+  name: string;
+  url: string;
+  channel: NoiseType;
 }
 
 const PRESETS = [
@@ -48,6 +54,9 @@ const FlowEngine: React.FC = () => {
   const [customVolume, setCustomVolume] = useLocalStorage<number>('nexus-custom-vol', 50);
   const [audioOn, setAudioOn] = useState(false);
 
+  // Custom audio per channel
+  const [uploadChannel, setUploadChannel] = useState<NoiseType | 'custom'>('custom');
+
   const intervalRef = useRef<number | null>(null);
   const sessionStart = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,12 +74,10 @@ const FlowEngine: React.FC = () => {
     customVolume,
   }), [noiseVolumes, tone, customAudioUrl, customVolume]);
 
-  // Sync audio when config changes
   useEffect(() => {
     if (audioOn && getIsPlaying()) updateAudio(getAudioConfig());
   }, [noiseVolumes, tone, customVolume, audioOn, getAudioConfig]);
 
-  // Pause/resume audio with timer
   useEffect(() => {
     if (!audioOn) return;
     if (isRunning) {
@@ -95,7 +102,6 @@ const FlowEngine: React.FC = () => {
     setTimeLeft((isFocus ? focusMin : breakMin) * 60);
   }, [isFocus, focusMin, breakMin]);
 
-  // Apply preset / settings change to timer when not running
   useEffect(() => {
     if (!isRunning) {
       setTimeLeft((isFocus ? focusMin : breakMin) * 60);
@@ -135,7 +141,7 @@ const FlowEngine: React.FC = () => {
     } else {
       startAudio(getAudioConfig());
       setAudioOn(true);
-      if (!isRunning) pauseAudio(); // start paused if timer not running
+      if (!isRunning) pauseAudio();
     }
   };
 
@@ -146,7 +152,6 @@ const FlowEngine: React.FC = () => {
     const url = URL.createObjectURL(file);
     setCustomAudioUrl(url);
     setCustomAudioName(file.name);
-    // Restart audio if playing
     if (audioOn) {
       stopAudio();
       setTimeout(() => startAudio({ ...getAudioConfig(), customAudioUrl: url }), 100);
@@ -176,7 +181,7 @@ const FlowEngine: React.FC = () => {
   };
 
   return (
-    <GlassCard className="p-6 flex flex-col items-center gap-4 relative">
+    <GlassCard className="p-4 sm:p-6 flex flex-col items-center gap-4 relative">
       {isRunning && (
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 to-transparent breathing-active pointer-events-none" />
       )}
@@ -184,8 +189,8 @@ const FlowEngine: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-foreground tracking-tight">Flow Engine</h2>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${isFocus ? 'bg-primary/20 text-primary' : 'bg-accent text-accent-foreground'}`}>
+          <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">Flow Engine</h2>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${isFocus ? 'bg-primary/20 text-primary' : 'bg-accent/20 text-accent'}`}>
             {isFocus ? 'Focus' : 'Break'}
           </span>
         </div>
@@ -207,15 +212,15 @@ const FlowEngine: React.FC = () => {
             exit={{ opacity: 0, height: 0 }}
             className="w-full overflow-hidden"
           >
-            <div className="glass rounded-xl p-4 space-y-3">
+            <div className="glass rounded-xl p-3 sm:p-4 space-y-3">
               <p className="text-xs font-medium text-foreground">Timer Presets</p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                 {PRESETS.map(p => (
                   <motion.button
                     key={p.label}
                     whileTap={{ scale: 0.92 }}
                     onClick={() => { setFocusMin(p.focus); setBreakMin(p.break); }}
-                    className={`text-xs py-2 rounded-lg transition-colors ${focusMin === p.focus ? 'bg-primary/20 text-primary font-semibold' : 'glass text-muted-foreground hover:text-foreground'}`}
+                    className={`text-[11px] sm:text-xs py-2 rounded-lg transition-colors ${focusMin === p.focus ? 'bg-primary/20 text-primary font-semibold' : 'glass text-muted-foreground hover:text-foreground'}`}
                   >
                     {p.label}
                   </motion.button>
@@ -251,7 +256,7 @@ const FlowEngine: React.FC = () => {
       </AnimatePresence>
 
       {/* Circular SVG timer */}
-      <div className="relative w-[200px] h-[200px]">
+      <div className="relative w-[160px] h-[160px] sm:w-[200px] sm:h-[200px]">
         <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
           <circle cx="100" cy="100" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
           <motion.circle
@@ -265,10 +270,10 @@ const FlowEngine: React.FC = () => {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-bold tabular-nums text-foreground">
+          <span className="text-3xl sm:text-4xl font-bold tabular-nums text-foreground">
             {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
           </span>
-          <span className="text-[11px] text-muted-foreground mt-1">
+          <span className="text-[10px] sm:text-[11px] text-muted-foreground mt-1">
             {sessions.filter(s => s.type === 'focus').length} sessions today
           </span>
         </div>
@@ -281,7 +286,7 @@ const FlowEngine: React.FC = () => {
           whileHover={{ scale: 1.1 }}
           transition={{ type: 'spring', stiffness: 500, damping: 15 }}
           onClick={isRunning ? pauseTimer : startTimer}
-          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]"
         >
           {isRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
         </motion.button>
@@ -301,7 +306,7 @@ const FlowEngine: React.FC = () => {
         </motion.button>
       </div>
 
-      {/* Audio mixer */}
+      {/* Audio mixer toggle */}
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={() => setShowAudio(!showAudio)}
@@ -346,10 +351,13 @@ const FlowEngine: React.FC = () => {
                 <Slider value={[tone]} onValueChange={([v]) => setTone(v)} min={0} max={100} step={1} />
               </div>
 
-              {/* Custom audio upload */}
+              {/* Custom audio upload with channel selector */}
               <div className="glass rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-foreground">Your Audio</span>
+                  <div className="flex items-center gap-2">
+                    <Music className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-foreground">Your Audio</span>
+                  </div>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -365,15 +373,35 @@ const FlowEngine: React.FC = () => {
                     <Upload className="w-3 h-3" /> Upload
                   </motion.button>
                 </div>
+
+                {/* Channel selector */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {[...noiseChannels.map(c => ({ key: c.key, label: c.label })), { key: 'custom' as const, label: 'Custom' }].map(ch => (
+                    <motion.button
+                      key={ch.key}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setUploadChannel(ch.key as NoiseType | 'custom')}
+                      className={`text-[9px] px-2 py-0.5 rounded-full transition-all ${
+                        uploadChannel === ch.key ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {ch.label}
+                    </motion.button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-muted-foreground mb-2">
+                  Upload to: <span className="text-primary font-medium">{uploadChannel === 'custom' ? 'Custom layer' : `${uploadChannel} channel`}</span>
+                </p>
+
                 {customAudioName ? (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground truncate max-w-[140px]">{customAudioName}</span>
+                    <span className="text-[11px] text-muted-foreground truncate max-w-[120px] sm:max-w-[140px]">{customAudioName}</span>
                     <div className="flex items-center gap-2">
                       <Slider
                         value={[customVolume]}
                         onValueChange={([v]) => setCustomVolume(v)}
                         min={0} max={100} step={1}
-                        className="w-16"
+                        className="w-14 sm:w-16"
                       />
                       <motion.button whileTap={{ scale: 0.9 }} onClick={removeCustomAudio}>
                         <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
