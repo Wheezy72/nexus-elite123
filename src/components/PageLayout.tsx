@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import Navbar from './Navbar';
 import VisionShimmer from './VisionShimmer';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -35,19 +35,25 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
   const [showGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
 
+  const { scrollY } = useScroll();
+  // Parallax: blobs move at different rates as user scrolls
+  const blob1Y = useTransform(scrollY, [0, 1000], [0, -120]);
+  const blob1X = useTransform(scrollY, [0, 1000], [0, 40]);
+  const blob2Y = useTransform(scrollY, [0, 1000], [0, -80]);
+  const blob2X = useTransform(scrollY, [0, 1000], [0, -60]);
+
   return (
     <div className="min-h-screen liquid-mesh-bg text-foreground">
       {showBlobs && (
         <>
-          <div className="aurora-blob" />
-          <div className="aurora-blob-2" />
+          <motion.div className="aurora-blob" style={{ y: blob1Y, x: blob1X }} />
+          <motion.div className="aurora-blob-2" style={{ y: blob2Y, x: blob2X }} />
         </>
       )}
       {showNoise && <div className="noise-overlay" />}
       {showGrid && <div className="grid-overlay" />}
       <VisionShimmer />
 
-      {/* Video Background from Settings */}
       {videoBg && videoEnabled && (
         <div className="fixed inset-0 z-0 pointer-events-none">
           <video
