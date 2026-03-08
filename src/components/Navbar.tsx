@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { NavLink } from 'react-router-dom';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   Zap, Timer, Smile, ListTodo, Target, Moon as MoonIcon,
-  Droplets, BarChart3, Menu, X, Home, PenLine, BookOpen
+  Droplets, BarChart3, Home, PenLine, BookOpen, Settings
 } from 'lucide-react';
 
 interface NavItem {
@@ -23,44 +23,62 @@ const navItems: NavItem[] = [
   { to: '/notes', label: 'Notes', icon: BookOpen },
   { to: '/water', label: 'Water', icon: Droplets },
   { to: '/stats', label: 'Stats', icon: BarChart3 },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 const Navbar: React.FC = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <>
       {/* Desktop top nav */}
-      <nav className="sticky top-0 z-50 glass-nav hidden md:block">
+      <nav className="sticky top-0 z-50 hidden md:block glass-nav-premium">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <NavLink to="/" className="flex items-center gap-2.5 group">
               <motion.div
                 whileHover={{ rotate: 15, scale: 1.1 }}
-                className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/30 flex items-center justify-center"
+                className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-primary/40 to-accent/30 border border-primary/30 flex items-center justify-center"
               >
-                <Zap className="w-3.5 h-3.5 text-primary" />
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 animate-pulse" />
+                <Zap className="w-4 h-4 text-primary relative z-10" />
               </motion.div>
-              <span className="text-base font-bold tracking-tight text-foreground">Nexus Elite</span>
+              <span className="text-base font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Nexus Elite
+              </span>
             </NavLink>
 
-            <div className="flex items-center gap-0.5">
-              {navItems.map(item => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      isActive
-                        ? 'bg-primary/15 text-primary shadow-[0_0_12px_rgba(99,102,241,0.15)]'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
-                    }`
-                  }
-                >
-                  <item.icon className="w-3.5 h-3.5" />
-                  {item.label}
-                </NavLink>
-              ))}
+            <div className="flex items-center gap-0.5 relative">
+              {navItems.map(item => {
+                const isActive = location.pathname === item.to;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all group/nav"
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-pill"
+                        className="absolute inset-0 rounded-lg bg-primary/15 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <item.icon className={`w-3.5 h-3.5 relative z-10 transition-colors ${
+                      isActive ? 'text-primary' : 'text-muted-foreground group-hover/nav:text-foreground'
+                    }`} />
+                    <span className={`relative z-10 transition-colors ${
+                      isActive ? 'text-primary' : 'text-muted-foreground group-hover/nav:text-foreground'
+                    }`}>
+                      {item.label}
+                    </span>
+                    {/* Hover glow */}
+                    {!isActive && (
+                      <div className="absolute inset-0 rounded-lg opacity-0 group-hover/nav:opacity-100 bg-white/[0.03] transition-opacity" />
+                    )}
+                  </NavLink>
+                );
+              })}
             </div>
 
             <p className="text-[11px] text-muted-foreground hidden lg:block">
@@ -70,47 +88,42 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Mobile bottom tab bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav safe-bottom border-t border-white/[0.06]">
-        <div className="grid grid-cols-5 gap-0">
-          {navItems.slice(0, 5).map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+      {/* Mobile bottom tab bar - scrollable single row */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav-premium safe-bottom border-t border-white/[0.06]">
+        <div className="flex overflow-x-auto scrollbar-hide gap-0 px-1 py-1">
+          {navItems.map(item => {
+            const isActive = location.pathname === item.to;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className="relative flex flex-col items-center gap-0.5 py-1.5 px-3 min-w-[56px] text-[10px] font-medium transition-colors shrink-0"
+              >
+                {/* Active glow dot */}
+                {isActive && (
+                  <motion.div
+                    layoutId="mobile-dot"
+                    className="absolute -top-0.5 w-4 h-0.5 rounded-full bg-primary shadow-[0_0_8px_rgba(99,102,241,0.6)]"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <item.icon className={`w-[18px] h-[18px] transition-colors ${
                   isActive ? 'text-primary' : 'text-muted-foreground'
-                }`
-              }
-            >
-              <item.icon className="w-4.5 h-4.5" />
-              {item.label}
-            </NavLink>
-          ))}
-        </div>
-        <div className="grid grid-cols-5 gap-0 border-t border-white/[0.04]">
-          {navItems.slice(5).map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`
-              }
-            >
-              <item.icon className="w-4.5 h-4.5" />
-              {item.label}
-            </NavLink>
-          ))}
+                }`} />
+                <span className={isActive ? 'text-primary' : 'text-muted-foreground'}>
+                  {item.label}
+                </span>
+              </NavLink>
+            );
+          })}
         </div>
       </div>
 
       {/* Mobile top header */}
-      <div className="md:hidden sticky top-0 z-50 glass-nav">
+      <div className="md:hidden sticky top-0 z-50 glass-nav-premium">
         <div className="flex items-center justify-between px-4 h-12">
           <NavLink to="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/30 flex items-center justify-center">
+            <div className="relative w-6 h-6 rounded-md bg-gradient-to-br from-primary/40 to-accent/30 border border-primary/30 flex items-center justify-center">
               <Zap className="w-3 h-3 text-primary" />
             </div>
             <span className="text-sm font-bold text-foreground">Nexus Elite</span>

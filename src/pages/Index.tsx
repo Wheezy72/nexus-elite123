@@ -1,7 +1,6 @@
-import { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Timer, ListTodo, Target, PenLine, Smile, Moon, BookOpen, Droplets, BarChart3, TrendingUp, Zap, ArrowRight } from 'lucide-react';
+import { Timer, ListTodo, Target, PenLine, Smile, Moon, BookOpen, Droplets, BarChart3, Zap, ArrowRight, Settings } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import DailyQuotes from '@/components/DailyQuotes';
@@ -16,15 +15,16 @@ const modules = [
   { to: '/notes', label: 'Notes', desc: 'Markdown notes with categories', icon: BookOpen, color: 'from-cyan-500/20 to-sky-500/20' },
   { to: '/water', label: 'Hydration', desc: 'Daily water intake tracking', icon: Droplets, color: 'from-sky-500/20 to-blue-500/20' },
   { to: '/stats', label: 'Pomodoro Stats', desc: 'Focus time analytics & trends', icon: BarChart3, color: 'from-red-500/20 to-orange-500/20' },
+  { to: '/settings', label: 'Settings', desc: 'Video bg, accent colors, preferences', icon: Settings, color: 'from-gray-500/20 to-zinc-500/20' },
 ];
 
 const container = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.06 } },
+  show: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.15 } },
 };
 const item = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } },
 };
 
 const Index = () => (
@@ -37,7 +37,7 @@ const Index = () => (
         transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/20 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.15)]">
           <Zap className="w-5 h-5 text-primary" />
         </div>
       </motion.div>
@@ -47,7 +47,7 @@ const Index = () => (
         transition={{ delay: 0.1 }}
         className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-2"
       >
-        Nexus <span className="text-primary">Elite</span>
+        Nexus <span className="shimmer-text">Elite</span>
       </motion.h1>
       <motion.p
         initial={{ opacity: 0 }}
@@ -69,7 +69,7 @@ const Index = () => (
       {modules.map(mod => (
         <motion.div key={mod.to} variants={item}>
           <Link to={mod.to}>
-            <GlassCard className="p-5 group hover:border-primary/20 transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.1)]">
+            <GlassCard className="p-5 group transition-all duration-300">
               <div className="flex items-start justify-between">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${mod.color} flex items-center justify-center mb-3`}>
                   <mod.icon className="w-5 h-5 text-foreground" />

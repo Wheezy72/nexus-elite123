@@ -14,6 +14,7 @@ import SleepPage from "./pages/SleepPage";
 import NotesPage from "./pages/NotesPage";
 import WaterPage from "./pages/WaterPage";
 import StatsPage from "./pages/StatsPage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/water" element={<WaterPage />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AnimatePresence>

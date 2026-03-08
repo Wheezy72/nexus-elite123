@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, CheckCircle2, Circle, Trash2, ListTodo, ArrowRight, Clock, ChevronDown, Filter } from 'lucide-react';
+import {
+  Plus, X, CheckCircle2, Circle, Trash2, ListTodo, ArrowRight, Clock,
+  Filter, Calendar, ChevronDown, ChevronUp, Square, CheckSquare
+} from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
+
+interface SubTask {
+  id: string;
+  text: string;
+  done: boolean;
+}
 
 interface Task {
   id: string;
@@ -11,28 +20,43 @@ interface Task {
   column: 'todo' | 'progress' | 'done';
   priority: 'low' | 'medium' | 'high';
   createdAt: string;
+  dueDate?: string;
+  subtasks: SubTask[];
 }
 
 const COLUMNS = [
-  { key: 'todo' as const, label: 'To Do', icon: Circle, accent: 'text-muted-foreground', dot: 'bg-muted-foreground' },
-  { key: 'progress' as const, label: 'In Progress', icon: Clock, accent: 'text-primary', dot: 'bg-primary' },
-  { key: 'done' as const, label: 'Done', icon: CheckCircle2, accent: 'text-emerald-400', dot: 'bg-emerald-400' },
+  { key: 'todo' as const, label: 'To Do', icon: Circle, accent: 'text-muted-foreground', dot: 'bg-muted-foreground', gradient: 'from-muted-foreground/30 to-transparent' },
+  { key: 'progress' as const, label: 'In Progress', icon: Clock, accent: 'text-primary', dot: 'bg-primary', gradient: 'from-primary/40 to-transparent' },
+  { key: 'done' as const, label: 'Done', icon: CheckCircle2, accent: 'text-emerald-400', dot: 'bg-emerald-400', gradient: 'from-emerald-400/40 to-transparent' },
 ];
 
 const PRIORITIES = [
-  { key: 'low' as const, label: 'Low', class: 'border-muted-foreground/20 text-muted-foreground' },
-  { key: 'medium' as const, label: 'Med', class: 'border-amber-500/30 text-amber-400' },
-  { key: 'high' as const, label: 'High', class: 'border-red-500/30 text-red-400' },
+  { key: 'low' as const, label: 'Low', border: 'border-l-muted-foreground/20', badge: 'border-muted-foreground/20 text-muted-foreground' },
+  { key: 'medium' as const, label: 'Med', border: 'border-l-amber-500/40', badge: 'border-amber-500/30 text-amber-400' },
+  { key: 'high' as const, label: 'High', border: 'border-l-red-500/40', badge: 'border-red-500/30 text-red-400' },
 ];
 
 const priorityOrder = { high: 0, medium: 1, low: 2 };
+
+const colStagger = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
+};
+const cardAnim = {
+  hidden: { opacity: 0, y: 12, scale: 0.96 },
+  show: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } },
+};
 
 const TaskBoard: React.FC = () => {
   const [tasks, setTasks] = useLocalStorage<Task[]>('nexus-tasks', []);
   const [newText, setNewText] = useState('');
   const [newPriority, setNewPriority] = useState<Task['priority']>('medium');
+  const [newDueDate, setNewDueDate] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<'all' | Task['priority']>('all');
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [subtaskInputs, setSubtaskInputs] = useState<Record<string, string>>({});
 
   const addTask = () => {
     if (!newText.trim()) return;
@@ -42,8 +66,11 @@ const TaskBoard: React.FC = () => {
       column: 'todo',
       priority: newPriority,
       createdAt: new Date().toISOString(),
+      dueDate: newDueDate || undefined,
+      subtasks: [],
     }]);
     setNewText('');
+    setNewDueDate('');
     setShowAdd(false);
   };
 
@@ -55,12 +82,38 @@ const TaskBoard: React.FC = () => {
     setTasks(prev => prev.filter(t => t.id !== id));
   };
 
+  const addSubtask = (taskId: string) => {
+    const text = subtaskInputs[taskId]?.trim();
+    if (!text) return;
+    setTasks(prev => prev.map(t =>
+      t.id === taskId
+        ? { ...t, subtasks: [...t.subtasks, { id: crypto.randomUUID(), text, done: false }] }
+        : t
+    ));
+    setSubtaskInputs(prev => ({ ...prev, [taskId]: '' }));
+  };
+
+  const toggleSubtask = (taskId: string, subId: string) => {
+    setTasks(prev => prev.map(t =>
+      t.id === taskId
+        ? { ...t, subtasks: t.subtasks.map(s => s.id === subId ? { ...s, done: !s.done } : s) }
+        : t
+    ));
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedTasks(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const nextCol = (col: Task['column']): Task['column'] | null => {
     if (col === 'todo') return 'progress';
     if (col === 'progress') return 'done';
     return null;
   };
-
   const prevCol = (col: Task['column']): Task['column'] | null => {
     if (col === 'done') return 'progress';
     if (col === 'progress') return 'todo';
@@ -73,6 +126,7 @@ const TaskBoard: React.FC = () => {
 
   const totalDone = tasks.filter(t => t.column === 'done').length;
   const totalTasks = tasks.length;
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <GlassCard className="p-4 sm:p-6" tilt={false}>
@@ -81,13 +135,10 @@ const TaskBoard: React.FC = () => {
         <div>
           <h2 className="text-lg font-bold text-foreground tracking-tight">Task Board</h2>
           {totalTasks > 0 && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {totalDone}/{totalTasks} completed
-            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{totalDone}/{totalTasks} completed</p>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          {/* Filter */}
           {totalTasks > 0 && (
             <div className="flex items-center gap-0.5 mr-1">
               {['all', 'high', 'medium', 'low'].map(f => (
@@ -96,9 +147,7 @@ const TaskBoard: React.FC = () => {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setFilter(f as typeof filter)}
                   className={`text-[9px] px-1.5 py-0.5 rounded-md font-medium transition-all ${
-                    filter === f
-                      ? 'bg-primary/15 text-primary'
-                      : 'text-muted-foreground/50 hover:text-muted-foreground'
+                    filter === f ? 'bg-primary/15 text-primary' : 'text-muted-foreground/50 hover:text-muted-foreground'
                   }`}
                 >
                   {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -131,7 +180,7 @@ const TaskBoard: React.FC = () => {
                 className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40"
                 autoFocus
               />
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex gap-1">
                   {PRIORITIES.map(p => (
                     <motion.button
@@ -139,21 +188,30 @@ const TaskBoard: React.FC = () => {
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setNewPriority(p.key)}
                       className={`text-[10px] px-2 py-0.5 rounded-md border font-medium transition-all ${
-                        newPriority === p.key ? p.class + ' border-current' : 'border-transparent text-muted-foreground/50'
+                        newPriority === p.key ? p.badge + ' border-current' : 'border-transparent text-muted-foreground/50'
                       }`}
                     >
                       {p.label}
                     </motion.button>
                   ))}
                 </div>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={addTask}
-                  className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
-                >
-                  Add Task
-                </motion.button>
+                <div className="flex items-center gap-1 ml-auto">
+                  <Calendar className="w-3 h-3 text-muted-foreground" />
+                  <input
+                    type="date"
+                    value={newDueDate}
+                    onChange={e => setNewDueDate(e.target.value)}
+                    className="text-[10px] bg-transparent outline-none text-muted-foreground"
+                  />
+                </div>
               </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={addTask}
+                className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
+              >
+                Add Task
+              </motion.button>
             </div>
           </motion.div>
         )}
@@ -182,52 +240,135 @@ const TaskBoard: React.FC = () => {
               const colTasks = filteredTasks.filter(t => t.column === col.key);
               return (
                 <div key={col.key}>
-                  <div className="flex items-center gap-2 mb-2.5 pb-2 border-b border-white/[0.04]">
-                    <div className={`w-1.5 h-1.5 rounded-full ${col.dot}`} />
-                    <span className={`text-[11px] font-semibold uppercase tracking-wider ${col.accent}`}>{col.label}</span>
-                    <span className="text-[10px] text-muted-foreground/40 ml-auto tabular-nums">{colTasks.length}</span>
+                  <div className="mb-2.5 pb-2">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${col.dot}`} />
+                      <span className={`text-[11px] font-semibold uppercase tracking-wider ${col.accent}`}>{col.label}</span>
+                      <span className="text-[10px] text-muted-foreground/40 ml-auto tabular-nums">{colTasks.length}</span>
+                    </div>
+                    <div className={`h-[2px] rounded-full bg-gradient-to-r ${col.gradient}`} />
                   </div>
-                  <div className="space-y-1.5 min-h-[40px]">
+                  <motion.div
+                    variants={colStagger}
+                    initial="hidden"
+                    animate="show"
+                    className="space-y-1.5 min-h-[40px]"
+                  >
                     <AnimatePresence>
                       {colTasks.map(task => {
                         const next = nextCol(task.column);
                         const prev = prevCol(task.column);
                         const priorityInfo = PRIORITIES.find(p => p.key === task.priority);
+                        const isOverdue = task.dueDate && task.dueDate < today && task.column !== 'done';
+                        const isExpanded = expandedTasks.has(task.id);
+                        const completedSubs = task.subtasks.filter(s => s.done).length;
                         return (
                           <motion.div
                             key={task.id}
+                            variants={cardAnim}
                             layout
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass rounded-lg p-2.5 group"
+                            exit="exit"
+                            className={`glass rounded-lg p-2.5 group border-l-2 ${priorityInfo?.border} ${
+                              isOverdue ? 'shadow-[0_0_12px_rgba(239,68,68,0.15)]' : ''
+                            } hover:shadow-[0_0_15px_rgba(99,102,241,0.08)] transition-shadow`}
                           >
                             <div className="flex items-start gap-2">
-                              {/* Click to advance */}
                               {next && (
-                                <motion.button
-                                  whileTap={{ scale: 0.8 }}
-                                  onClick={() => moveTask(task.id, next)}
-                                  className="mt-0.5 shrink-0"
-                                >
+                                <motion.button whileTap={{ scale: 0.8 }} onClick={() => moveTask(task.id, next)} className="mt-0.5 shrink-0">
                                   <col.icon className={`w-3.5 h-3.5 ${col.accent} hover:text-foreground transition-colors`} />
                                 </motion.button>
                               )}
-                              {task.column === 'done' && (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                              )}
+                              {task.column === 'done' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />}
                               <div className="flex-1 min-w-0">
                                 <p className={`text-[11px] leading-relaxed ${task.column === 'done' ? 'line-through text-muted-foreground/60' : 'text-foreground'}`}>
                                   {task.text}
                                 </p>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                  <span className={`text-[8px] px-1 py-px rounded border font-medium ${priorityInfo?.class}`}>
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                  <span className={`text-[8px] px-1 py-px rounded border font-medium ${priorityInfo?.badge}`}>
                                     {priorityInfo?.label}
                                   </span>
+                                  {task.dueDate && (
+                                    <span className={`text-[8px] px-1 py-px rounded flex items-center gap-0.5 ${
+                                      isOverdue ? 'text-red-400 bg-red-500/10' : 'text-muted-foreground/60'
+                                    }`}>
+                                      <Calendar className="w-2 h-2" />
+                                      {new Date(task.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  )}
+                                  {task.subtasks.length > 0 && (
+                                    <button
+                                      onClick={() => toggleExpand(task.id)}
+                                      className="text-[8px] text-muted-foreground/60 flex items-center gap-0.5 hover:text-foreground transition-colors"
+                                    >
+                                      {completedSubs}/{task.subtasks.length} subtasks
+                                      {isExpanded ? <ChevronUp className="w-2 h-2" /> : <ChevronDown className="w-2 h-2" />}
+                                    </button>
+                                  )}
                                 </div>
+
+                                {/* Subtasks */}
+                                <AnimatePresence>
+                                  {(isExpanded || task.subtasks.length === 0) && task.column !== 'done' && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="overflow-hidden"
+                                    >
+                                      {task.subtasks.length > 0 && (
+                                        <div className="mt-2 space-y-1 pl-0.5">
+                                          {task.subtasks.map(sub => (
+                                            <motion.button
+                                              key={sub.id}
+                                              layout
+                                              onClick={() => toggleSubtask(task.id, sub.id)}
+                                              className="flex items-center gap-1.5 w-full text-left"
+                                            >
+                                              {sub.done
+                                                ? <CheckSquare className="w-3 h-3 text-primary shrink-0" />
+                                                : <Square className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+                                              }
+                                              <span className={`text-[10px] ${sub.done ? 'line-through text-muted-foreground/40' : 'text-muted-foreground'}`}>
+                                                {sub.text}
+                                              </span>
+                                            </motion.button>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {task.column !== 'done' && (
+                                        <div className="flex items-center gap-1 mt-1.5">
+                                          <input
+                                            value={subtaskInputs[task.id] || ''}
+                                            onChange={e => setSubtaskInputs(p => ({ ...p, [task.id]: e.target.value }))}
+                                            onKeyDown={e => e.key === 'Enter' && addSubtask(task.id)}
+                                            placeholder="+ subtask"
+                                            className="flex-1 text-[10px] bg-transparent outline-none text-muted-foreground placeholder:text-muted-foreground/30"
+                                          />
+                                          {subtaskInputs[task.id]?.trim() && (
+                                            <motion.button
+                                              initial={{ scale: 0 }}
+                                              animate={{ scale: 1 }}
+                                              whileTap={{ scale: 0.8 }}
+                                              onClick={() => addSubtask(task.id)}
+                                              className="text-primary"
+                                            >
+                                              <Plus className="w-3 h-3" />
+                                            </motion.button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
                               </div>
                               {/* Actions */}
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                {!isExpanded && task.subtasks.length === 0 && task.column !== 'done' && (
+                                  <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleExpand(task.id)}
+                                    className="p-1 text-muted-foreground/40 hover:text-primary" title="Add subtasks">
+                                    <Plus className="w-3 h-3" />
+                                  </motion.button>
+                                )}
                                 {prev && (
                                   <motion.button whileTap={{ scale: 0.8 }} onClick={() => moveTask(task.id, prev)}
                                     className="p-1 text-muted-foreground/40 hover:text-foreground">
@@ -250,7 +391,7 @@ const TaskBoard: React.FC = () => {
                         );
                       })}
                     </AnimatePresence>
-                  </div>
+                  </motion.div>
                 </div>
               );
             })}
