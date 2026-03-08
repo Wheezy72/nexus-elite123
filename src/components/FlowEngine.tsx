@@ -54,6 +54,7 @@ const FlowEngine: React.FC = () => {
   const [customAudioName, setCustomAudioName] = useState<string | null>(null);
   const [customVolume, setCustomVolume] = useLocalStorage<number>('nexus-custom-vol', 50);
   const [audioOn, setAudioOn] = useState(false);
+  const [notificationsOn, setNotificationsOn] = useLocalStorage<boolean>('nexus-notif-on', true);
 
   // Custom audio per channel
   const [uploadChannel, setUploadChannel] = useState<NoiseType | 'custom'>('custom');
@@ -61,6 +62,7 @@ const FlowEngine: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const sessionStart = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const warningFiredRef = useRef(false);
 
   const totalTime = (isFocus ? focusMin : breakMin) * 60;
   const progress = 1 - timeLeft / totalTime;
