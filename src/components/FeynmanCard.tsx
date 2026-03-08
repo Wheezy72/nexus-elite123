@@ -40,6 +40,7 @@ const FeynmanCard: React.FC = () => {
     setFront('');
     setBack('');
     setIsFlipped(false);
+    rewardAction('feynman_save');
   };
 
   const deleteReflection = (id: string) => {
