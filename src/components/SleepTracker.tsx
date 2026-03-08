@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
+import { rewardAction } from '@/lib/rewards';
 
 interface SleepEntry {
   id: string;
