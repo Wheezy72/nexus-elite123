@@ -23,7 +23,7 @@ export const staggerItem = {
     y: 0,
     scale: 1,
     filter: 'blur(0px)',
-    transition: { type: 'spring', stiffness: 260, damping: 24 },
+    transition: { type: 'spring' as const, stiffness: 260, damping: 24 },
   },
 };
 
