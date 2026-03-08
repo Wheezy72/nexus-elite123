@@ -14,7 +14,335 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      goals: {
+        Row: {
+          created_at: string
+          current: number
+          id: string
+          name: string
+          period: string
+          target: number
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current?: number
+          id?: string
+          name: string
+          period?: string
+          target: number
+          unit?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current?: number
+          id?: string
+          name?: string
+          period?: string
+          target?: number
+          unit?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          date: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          date?: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          date?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          created_at: string
+          id: string
+          mood: number | null
+          tags: string[] | null
+          text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood?: number | null
+          tags?: string[] | null
+          text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood?: number | null
+          tags?: string[] | null
+          text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          date: string
+          emoji: string
+          id: string
+          label: string
+          note: string | null
+          triggers: string[] | null
+          user_id: string
+        }
+        Insert: {
+          date?: string
+          emoji: string
+          id?: string
+          label: string
+          note?: string | null
+          triggers?: string[] | null
+          user_id: string
+        }
+        Update: {
+          date?: string
+          emoji?: string
+          id?: string
+          label?: string
+          note?: string | null
+          triggers?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_done: boolean
+          remind_at: string
+          repeat: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_done?: boolean
+          remind_at: string
+          repeat?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_done?: boolean
+          remind_at?: string
+          repeat?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sleep_entries: {
+        Row: {
+          bedtime: string
+          created_at: string
+          date: string
+          hours_slept: number
+          id: string
+          quality: number
+          user_id: string
+          wake_time: string
+        }
+        Insert: {
+          bedtime: string
+          created_at?: string
+          date: string
+          hours_slept: number
+          id?: string
+          quality: number
+          user_id: string
+          wake_time: string
+        }
+        Update: {
+          bedtime?: string
+          created_at?: string
+          date?: string
+          hours_slept?: number
+          id?: string
+          quality?: number
+          user_id?: string
+          wake_time?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          column_status: string
+          created_at: string
+          due_date: string | null
+          id: string
+          priority: string
+          subtasks: Json
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          column_status?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          subtasks?: Json
+          text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          column_status?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          subtasks?: Json
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      water_logs: {
+        Row: {
+          date: string
+          glasses: number
+          goal: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          date?: string
+          glasses?: number
+          goal?: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          date?: string
+          glasses?: number
+          goal?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
