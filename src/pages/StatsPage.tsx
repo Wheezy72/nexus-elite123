@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Clock, Flame, Target, TrendingUp } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
+import ProductivityScore from '@/components/ProductivityScore';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface FlowSession {
@@ -13,7 +14,7 @@ interface FlowSession {
   type: 'focus' | 'break';
 }
 
-const COLORS = ['hsl(226 70% 55.5%)', 'hsl(280 60% 55%)', 'hsl(200 70% 55%)', 'hsl(340 60% 55%)'];
+const COLORS = ['hsl(var(--primary))', 'hsl(280 60% 55%)', 'hsl(200 70% 55%)', 'hsl(340 60% 55%)'];
 
 const StatsPage = () => {
   const [sessions] = useLocalStorage<FlowSession[]>('nexus-flow-sessions', []);
@@ -82,16 +83,19 @@ const StatsPage = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Productivity Score */}
+        <ProductivityScore />
+
         {/* Daily bar chart */}
         <GlassCard className="p-5">
           <h2 className="text-sm font-semibold text-foreground mb-4">Daily Focus (minutes)</h2>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={daily}>
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(240 5% 64.9%)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: 'hsl(240 5% 64.9%)' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: 'hsl(240 10% 8%)', border: '1px solid hsl(240 5% 17%)', borderRadius: 8, fontSize: 12, color: 'hsl(0 0% 98%)' }} />
-              <Bar dataKey="minutes" fill="hsl(226 70% 55.5%)" radius={[4, 4, 0, 0]} />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }} />
+              <Bar dataKey="minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </GlassCard>
@@ -101,9 +105,9 @@ const StatsPage = () => {
           <h2 className="text-sm font-semibold text-foreground mb-4">Sessions Trend</h2>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={daily}>
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(240 5% 64.9%)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: 'hsl(240 5% 64.9%)' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: 'hsl(240 10% 8%)', border: '1px solid hsl(240 5% 17%)', borderRadius: 8, fontSize: 12, color: 'hsl(0 0% 98%)' }} />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }} />
               <Line type="monotone" dataKey="sessions" stroke="hsl(280 60% 55%)" strokeWidth={2} dot={{ fill: 'hsl(280 60% 55%)', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -117,7 +121,7 @@ const StatsPage = () => {
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
                 {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: 'hsl(240 10% 8%)', border: '1px solid hsl(240 5% 17%)', borderRadius: 8, fontSize: 12, color: 'hsl(0 0% 98%)' }} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex justify-center gap-4 mt-2">
@@ -131,13 +135,13 @@ const StatsPage = () => {
         </GlassCard>
 
         {/* Peak hours */}
-        <GlassCard className="p-5">
+        <GlassCard className="p-5 lg:col-span-2">
           <h2 className="text-sm font-semibold text-foreground mb-4">Peak Focus Hours</h2>
           {hourDist.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={hourDist}>
-                <XAxis dataKey="hour" tick={{ fontSize: 9, fill: 'hsl(240 5% 64.9%)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: 'hsl(240 5% 64.9%)' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="hour" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                 <Bar dataKey="count" fill="hsl(200 70% 55%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
