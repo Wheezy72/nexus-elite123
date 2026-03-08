@@ -1,17 +1,34 @@
+import { useCallback } from 'react';
 import FlowEngine from '@/components/FlowEngine';
 import MicroLogger from '@/components/MicroLogger';
 import FeynmanCard from '@/components/FeynmanCard';
-import ReadingVelocity from '@/components/ReadingVelocity';
+import HabitTracker from '@/components/HabitTracker';
+import FocusStats from '@/components/FocusStats';
+import AmbientScenes from '@/components/AmbientScenes';
+import BrainDump from '@/components/BrainDump';
 import PulseBreather from '@/components/PulseBreather';
 import VisionShimmer from '@/components/VisionShimmer';
+import { startAudio, stopAudio, getIsPlaying, type NoiseType } from '@/lib/audioEngine';
 import { Zap } from 'lucide-react';
 
 const Index = () => {
+  const handleApplyScene = useCallback((volumes: Record<NoiseType, number>, tone: number) => {
+    // Save to localStorage so FlowEngine picks up the values
+    localStorage.setItem('nexus-noise-vols', JSON.stringify(volumes));
+    localStorage.setItem('nexus-tone', JSON.stringify(tone));
+    // Restart audio with new config if already playing
+    if (getIsPlaying()) {
+      stopAudio();
+      startAudio({ noiseVolumes: volumes, tone, customAudioUrl: null, customVolume: 50 });
+    }
+    // Trigger storage event for other components to react
+    window.dispatchEvent(new Event('storage'));
+  }, []);
+
   return (
     <div className="min-h-screen liquid-mesh-bg text-foreground">
       <VisionShimmer />
 
-      {/* Header */}
       <header className="px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
@@ -24,17 +41,26 @@ const Index = () => {
         </p>
       </header>
 
-      {/* Bento Grid */}
       <main className="px-4 sm:px-6 pb-10 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
-          {/* Flow Engine - large */}
+          {/* Flow Engine */}
           <div className="lg:row-span-2">
             <FlowEngine />
           </div>
 
-          {/* Micro Logger */}
-          <div className="lg:col-span-1">
+          {/* Mood Logger */}
+          <div>
             <MicroLogger />
+          </div>
+
+          {/* Ambient Scenes */}
+          <div>
+            <AmbientScenes onApplyScene={handleApplyScene} />
+          </div>
+
+          {/* Habit Tracker - wide */}
+          <div className="lg:col-span-2">
+            <HabitTracker />
           </div>
 
           {/* Pulse Breather */}
@@ -42,14 +68,19 @@ const Index = () => {
             <PulseBreather />
           </div>
 
+          {/* Brain Dump */}
+          <div>
+            <BrainDump />
+          </div>
+
           {/* Feynman Card */}
           <div>
             <FeynmanCard />
           </div>
 
-          {/* Reading Velocity - wide */}
+          {/* Focus Stats - wide */}
           <div className="lg:col-span-2">
-            <ReadingVelocity />
+            <FocusStats />
           </div>
         </div>
       </main>
