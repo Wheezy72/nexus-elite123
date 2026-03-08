@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Upload, X, CloudRain, Wind, Trees, Radio, Music } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Upload, X, CloudRain, Wind, Trees, Radio, Music, Bell } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { startAudio, stopAudio, updateAudio, pauseAudio, resumeAudio, getIsPlaying, type AudioConfig, type NoiseType } from '@/lib/audioEngine';
+import { requestNotificationPermission, sendTimerNotification, setTabBadge, resetTabTitle, playAlertChime, playWarningTick } from '@/lib/timerNotifications';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 
