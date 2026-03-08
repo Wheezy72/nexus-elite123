@@ -17,7 +17,17 @@ const WaterPage = () => {
   const current = log[todayKey] || 0;
   const pct = Math.min(current / goal, 1);
 
-  const add = (n: number) => setLog(prev => ({ ...prev, [todayKey]: Math.max(0, (prev[todayKey] || 0) + n) }));
+  const add = (n: number) => {
+    const newVal = Math.max(0, (log[todayKey] || 0) + n);
+    setLog(prev => ({ ...prev, [todayKey]: newVal }));
+    if (n > 0) {
+      haptic('light');
+      rewardAction('water_drink');
+      if (newVal >= goal && (log[todayKey] || 0) < goal) {
+        rewardAction('water_goal');
+      }
+    }
+  };
   const reset = () => setLog(prev => ({ ...prev, [todayKey]: 0 }));
 
   // Last 7 days
