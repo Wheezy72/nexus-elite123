@@ -68,9 +68,11 @@ const HabitTracker: React.FC = () => {
   const toggle = (habitId: string, dateKey: string) => {
     setLog(prev => {
       const existing = prev[dateKey] || [];
-      const next = existing.includes(habitId)
+      const wasChecked = existing.includes(habitId);
+      const next = wasChecked
         ? existing.filter(id => id !== habitId)
         : [...existing, habitId];
+      if (!wasChecked) rewardAction('habit_check');
       return { ...prev, [dateKey]: next };
     });
   };

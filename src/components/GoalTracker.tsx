@@ -39,7 +39,15 @@ const GoalTracker: React.FC = () => {
   };
 
   const increment = (id: string, amount = 1) => {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, current: Math.min(g.current + amount, g.target) } : g));
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      const newCurrent = Math.min(g.current + amount, g.target);
+      const wasComplete = g.current >= g.target;
+      const isNowComplete = newCurrent >= g.target;
+      if (!wasComplete && isNowComplete) rewardAction('goal_complete');
+      else rewardAction('goal_increment');
+      return { ...g, current: newCurrent };
+    }));
   };
 
   const decrement = (id: string) => {
