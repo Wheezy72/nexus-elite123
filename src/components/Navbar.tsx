@@ -57,14 +57,15 @@ const Navbar: React.FC = () => {
               </span>
             </NavLink>
 
-            <div className="flex items-center gap-0.5 relative">
+            <div className="flex items-center gap-0 relative">
               {navItems.map(item => {
                 const isActive = location.pathname === item.to;
                 return (
                   <NavLink
                     key={item.to}
                     to={item.to}
-                    className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all group/nav"
+                    title={item.label}
+                    className="relative flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all group/nav"
                   >
                     {isActive && (
                       <motion.div
@@ -76,7 +77,7 @@ const Navbar: React.FC = () => {
                     <item.icon className={`w-3.5 h-3.5 relative z-10 transition-colors ${
                       isActive ? 'text-primary' : 'text-muted-foreground group-hover/nav:text-foreground'
                     }`} />
-                    <span className={`relative z-10 transition-colors ${
+                    <span className={`relative z-10 transition-colors hidden xl:inline ${
                       isActive ? 'text-primary' : 'text-muted-foreground group-hover/nav:text-foreground'
                     }`}>
                       {item.label}
@@ -88,10 +89,6 @@ const Navbar: React.FC = () => {
                 );
               })}
             </div>
-
-            <p className="text-[11px] text-muted-foreground hidden lg:block shrink-0">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </p>
           </div>
         </div>
       </nav>
