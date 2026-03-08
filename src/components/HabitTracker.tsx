@@ -1,28 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Plus, X, Flame, Target } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useHabits } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
-import { rewardAction } from '@/lib/rewards';
-
-interface Habit {
-  id: string;
-  name: string;
-  emoji: string;
-}
-
-interface HabitLog {
-  [date: string]: string[]; // date -> completed habit ids
-}
-
-const DEFAULT_HABITS: Habit[] = [
-  { id: '1', name: 'Exercise', emoji: '💪' },
-  { id: '2', name: 'Journal', emoji: '📝' },
-  { id: '3', name: 'Hydrate', emoji: '💧' },
-  { id: '4', name: 'Meditate', emoji: '🧘' },
-  { id: '5', name: 'Read', emoji: '📖' },
-];
 
 const EMOJIS = ['🎯', '🏃', '🧠', '💊', '🥗', '😴', '🎨', '🎸', '🌿', '☀️'];
 
@@ -40,7 +21,7 @@ function getLast7Days() {
   return days;
 }
 
-function getStreak(log: HabitLog, habitId: string): number {
+function getStreak(log: Record<string, string[]>, habitId: string): number {
   let streak = 0;
   const today = new Date();
   for (let i = 0; i < 365; i++) {
@@ -49,15 +30,14 @@ function getStreak(log: HabitLog, habitId: string): number {
     const key = getDateKey(d);
     if (log[key]?.includes(habitId)) {
       streak++;
-    } else if (i > 0) break; // allow today to be incomplete
+    } else if (i > 0) break;
     else break;
   }
   return streak;
 }
 
 const HabitTracker: React.FC = () => {
-  const [habits, setHabits] = useLocalStorage<Habit[]>('nexus-habits', DEFAULT_HABITS);
-  const [log, setLog] = useLocalStorage<HabitLog>('nexus-habit-log', {});
+  const { habits, logs: log, addHabit: addHabitMut, removeHabit: removeHabitMut, toggleLog } = useHabits();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('🎯');
@@ -66,26 +46,18 @@ const HabitTracker: React.FC = () => {
   const today = getDateKey(new Date());
 
   const toggle = (habitId: string, dateKey: string) => {
-    setLog(prev => {
-      const existing = prev[dateKey] || [];
-      const wasChecked = existing.includes(habitId);
-      const next = wasChecked
-        ? existing.filter(id => id !== habitId)
-        : [...existing, habitId];
-      if (!wasChecked) rewardAction('habit_check');
-      return { ...prev, [dateKey]: next };
-    });
+    toggleLog.mutate({ habitId, date: dateKey });
   };
 
   const addHabit = () => {
     if (!newName.trim()) return;
-    setHabits(prev => [...prev, { id: crypto.randomUUID(), name: newName.trim(), emoji: newEmoji }]);
+    addHabitMut.mutate({ name: newName.trim(), emoji: newEmoji });
     setNewName('');
     setShowAdd(false);
   };
 
   const removeHabit = (id: string) => {
-    setHabits(prev => prev.filter(h => h.id !== id));
+    removeHabitMut.mutate(id);
   };
 
   const todayCompleted = log[today]?.length || 0;
@@ -109,7 +81,6 @@ const HabitTracker: React.FC = () => {
         </motion.button>
       </div>
 
-      {/* Add habit */}
       <AnimatePresence>
         {showAdd && (
           <motion.div
@@ -151,7 +122,6 @@ const HabitTracker: React.FC = () => {
         <EmptyState icon={Target} title="No habits" description="Add habits to start tracking" actionLabel="Add Habit" onAction={() => setShowAdd(true)} />
       ) : (
         <>
-          {/* Day headers */}
           <div className="grid gap-1" style={{ gridTemplateColumns: `1fr repeat(7, 32px)` }}>
             <div />
             {days.map(d => (
@@ -162,7 +132,6 @@ const HabitTracker: React.FC = () => {
               </div>
             ))}
 
-            {/* Habit rows */}
             {habits.map(habit => (
               <React.Fragment key={habit.id}>
                 <div className="flex items-center gap-1.5 pr-2 min-w-0 group">
@@ -194,7 +163,6 @@ const HabitTracker: React.FC = () => {
             ))}
           </div>
 
-          {/* Streaks */}
           <div className="flex gap-3 mt-4 overflow-x-auto">
             {habits.map(h => {
               const s = getStreak(log, h.id);

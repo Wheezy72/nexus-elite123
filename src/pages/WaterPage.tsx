@@ -6,32 +6,33 @@ import { haptic } from '@/lib/haptics';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import HydrationTips from '@/components/HydrationTips';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-
-const GOAL = 8;
+import { useWater } from '@/hooks/useCloudData';
 
 const WaterPage = () => {
-  const todayKey = new Date().toISOString().split('T')[0];
-  const [log, setLog] = useLocalStorage<Record<string, number>>('nexus-water-log', {});
-  const [goal, setGoal] = useLocalStorage<number>('nexus-water-goal', GOAL);
-  const [, setLastDrink] = useLocalStorage<string | null>('nexus-last-drink', null);
+  const { log, goal, isLoading, upsertWater, todayKey } = useWater();
 
   const current = log[todayKey] || 0;
   const pct = Math.min(current / goal, 1);
 
   const add = (n: number) => {
-    const newVal = Math.max(0, (log[todayKey] || 0) + n);
-    setLog(prev => ({ ...prev, [todayKey]: newVal }));
+    const newVal = Math.max(0, current + n);
+    upsertWater.mutate({ date: todayKey, glasses: newVal, goal });
     if (n > 0) {
       haptic('light');
-      setLastDrink(new Date().toISOString());
       rewardAction('water_drink');
-      if (newVal >= goal && (log[todayKey] || 0) < goal) {
+      if (newVal >= goal && current < goal) {
         rewardAction('water_goal');
       }
     }
   };
-  const reset = () => setLog(prev => ({ ...prev, [todayKey]: 0 }));
+
+  const reset = () => {
+    upsertWater.mutate({ date: todayKey, glasses: 0, goal });
+  };
+
+  const setGoal = (newGoal: number) => {
+    upsertWater.mutate({ date: todayKey, glasses: current, goal: newGoal });
+  };
 
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -44,7 +45,6 @@ const WaterPage = () => {
     <PageLayout>
       <motion.h1 variants={staggerItem} initial="hidden" animate="show" className="text-2xl font-bold text-foreground mb-6">Hydration Tracker</motion.h1>
       <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Glass fill animation */}
         <motion.div variants={staggerItem} className="lg:col-span-2">
           <GlassCard className="p-8 flex flex-col items-center">
             <div className="relative w-40 h-56 rounded-3xl border-2 border-primary/20 overflow-hidden mb-6">
@@ -99,10 +99,8 @@ const WaterPage = () => {
           </GlassCard>
         </motion.div>
 
-        {/* Side panel */}
         <motion.div variants={staggerItem} className="space-y-4">
           <HydrationTips />
-
           <GlassCard className="p-6">
             <h2 className="text-sm font-semibold text-foreground mb-4">This Week</h2>
             <div className="space-y-3">
