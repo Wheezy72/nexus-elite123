@@ -1,22 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { rewardAction } from '@/lib/rewards';
 import { haptic } from '@/lib/haptics';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import MicroLogger from '@/components/MicroLogger';
 import MoodPatterns from '@/components/MoodPatterns';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-
-interface MoodEntry {
-  id: string;
-  emoji: string;
-  label: string;
-  note: string;
-  date: string;
-  triggers?: string[];
-}
+import { useMood } from '@/hooks/useCloudData';
 
 const moods = [
   { emoji: '😄', label: 'Amazing', value: 5 },
@@ -38,7 +28,7 @@ const TRIGGERS = [
 ];
 
 const MoodPage = () => {
-  const [entries, setEntries] = useLocalStorage<MoodEntry[]>('nexus-mood-entries', []);
+  const { entries, addEntry } = useMood();
   const [selectedMood, setSelectedMood] = useState<typeof moods[0] | null>(null);
   const [note, setNote] = useState('');
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
@@ -52,18 +42,16 @@ const MoodPage = () => {
   const logMood = () => {
     if (!selectedMood) return;
     haptic('success');
-    setEntries(prev => [...prev, {
-      id: crypto.randomUUID(),
+    addEntry.mutate({
       emoji: selectedMood.emoji,
       label: selectedMood.label,
       note,
       date: new Date().toISOString(),
       triggers: selectedTriggers,
-    }]);
+    });
     setSelectedMood(null);
     setNote('');
     setSelectedTriggers([]);
-    rewardAction('mood_log');
   };
 
   const last7 = Array.from({ length: 7 }, (_, i) => {
@@ -81,7 +69,6 @@ const MoodPage = () => {
     <PageLayout>
       <motion.h1 variants={staggerItem} initial="hidden" animate="show" className="text-2xl font-bold text-foreground mb-6">Mood Tracker</motion.h1>
       <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Quick log */}
         <motion.div variants={staggerItem} className="lg:col-span-2">
           <GlassCard className="p-6">
             <h2 className="text-sm font-semibold text-foreground mb-4">How are you feeling?</h2>
@@ -93,9 +80,7 @@ const MoodPage = () => {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setSelectedMood(m)}
                   className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${
-                    selectedMood?.label === m.label
-                      ? 'bg-primary/20 glow-primary'
-                      : 'hover:bg-accent/20'
+                    selectedMood?.label === m.label ? 'bg-primary/20 glow-primary' : 'hover:bg-accent/20'
                   }`}
                 >
                   <span className="text-2xl">{m.emoji}</span>
@@ -104,7 +89,6 @@ const MoodPage = () => {
               ))}
             </div>
 
-            {/* Triggers */}
             <div className="mb-4">
               <p className="text-[10px] text-muted-foreground mb-2">What influenced this? (optional)</p>
               <div className="flex flex-wrap gap-2">
@@ -114,9 +98,7 @@ const MoodPage = () => {
                     whileTap={{ scale: 0.9 }}
                     onClick={() => toggleTrigger(t.label)}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs transition-all ${
-                      selectedTriggers.includes(t.label)
-                        ? 'bg-primary/20 text-primary'
-                        : 'glass text-muted-foreground hover:text-foreground'
+                      selectedTriggers.includes(t.label) ? 'bg-primary/20 text-primary' : 'glass text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     <span>{t.emoji}</span>
@@ -143,12 +125,10 @@ const MoodPage = () => {
           </GlassCard>
         </motion.div>
 
-        {/* Mood Patterns widget */}
         <motion.div variants={staggerItem}>
           <MoodPatterns />
         </motion.div>
 
-        {/* Chart */}
         <motion.div variants={staggerItem}>
           <GlassCard className="p-6">
             <h2 className="text-sm font-semibold text-foreground mb-4">Weekly Mood</h2>
@@ -160,9 +140,8 @@ const MoodPage = () => {
               </BarChart>
             </ResponsiveContainer>
 
-            {/* Recent entries */}
             <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
-              {entries.slice(-5).reverse().map(e => (
+              {entries.slice(0, 5).map(e => (
                 <div key={e.id} className="flex items-center gap-2 text-xs">
                   <span>{e.emoji}</span>
                   <span className="text-muted-foreground">{new Date(e.date).toLocaleDateString()}</span>
@@ -176,7 +155,6 @@ const MoodPage = () => {
           </GlassCard>
         </motion.div>
 
-        {/* Existing micro logger */}
         <motion.div variants={staggerItem} className="lg:col-span-2">
           <MicroLogger />
         </motion.div>

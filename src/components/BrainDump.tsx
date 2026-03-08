@@ -1,18 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PenLine, Search, X, Smile, Meh, Frown, Laugh, Angry, ChevronDown, ChevronUp } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useJournal } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
-import { rewardAction } from '@/lib/rewards';
 import EmptyState from './EmptyState';
-
-interface JournalEntry {
-  id: string;
-  text: string;
-  mood: number | null;
-  timestamp: string;
-  tags: string[];
-}
 
 const moodIcons = [Angry, Frown, Meh, Smile, Laugh];
 const moodLabels = ['Awful', 'Bad', 'Meh', 'Good', 'Great'];
@@ -34,7 +25,7 @@ const listItem = {
 };
 
 const BrainDump: React.FC = () => {
-  const [entries, setEntries] = useLocalStorage<JournalEntry[]>('nexus-journal', []);
+  const { entries, addEntry, deleteEntry } = useJournal();
   const [text, setText] = useState('');
   const [mood, setMood] = useState<number | null>(null);
   const [tagInput, setTagInput] = useState('');
@@ -62,22 +53,15 @@ const BrainDump: React.FC = () => {
 
   const save = () => {
     if (!text.trim()) return;
-    setEntries(prev => [{
-      id: crypto.randomUUID(),
-      text: text.trim(),
-      mood,
-      timestamp: new Date().toISOString(),
-      tags,
-    }, ...prev]);
+    addEntry.mutate({ text: text.trim(), mood, tags });
     setText('');
     setMood(null);
     setTags([]);
     setShowCompose(false);
-    rewardAction('journal_entry');
   };
 
-  const deleteEntry = (id: string) => {
-    setEntries(prev => prev.filter(e => e.id !== id));
+  const handleDelete = (id: string) => {
+    deleteEntry.mutate(id);
   };
 
   const filtered = useMemo(() => {
@@ -109,15 +93,9 @@ const BrainDump: React.FC = () => {
         </motion.button>
       </div>
 
-      {/* Compose */}
       <AnimatePresence>
         {showCompose && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden mb-4"
-          >
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
             <div className="glass rounded-xl p-4 space-y-3 border-l-2 border-l-primary/40">
               <textarea
                 value={text}
@@ -126,14 +104,10 @@ const BrainDump: React.FC = () => {
                 rows={4}
                 className="w-full bg-transparent outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50"
               />
-
-              {/* Word / char count */}
               <div className="flex items-center gap-3 text-[9px] text-muted-foreground/50">
                 <span>{wordCount} words</span>
                 <span>{charCount} chars</span>
               </div>
-
-              {/* Mood selector */}
               <div className="flex items-center gap-1">
                 <span className="text-[10px] text-muted-foreground mr-1">Mood:</span>
                 {moodIcons.map((Icon, i) => (
@@ -143,17 +117,13 @@ const BrainDump: React.FC = () => {
                     whileHover={{ scale: 1.15 }}
                     onClick={() => setMood(mood === i + 1 ? null : i + 1)}
                     className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
-                      mood === i + 1
-                        ? 'bg-primary/20 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
-                        : 'hover:bg-accent/20'
+                      mood === i + 1 ? 'bg-primary/20 shadow-[0_0_12px_rgba(99,102,241,0.2)]' : 'hover:bg-accent/20'
                     }`}
                   >
                     <Icon className={`w-4 h-4 transition-colors ${mood === i + 1 ? 'text-primary' : 'text-muted-foreground'}`} />
                   </motion.button>
                 ))}
               </div>
-
-              {/* Tags */}
               <div className="flex flex-wrap gap-1.5 items-center">
                 {tags.map(t => (
                   <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary flex items-center gap-1">
@@ -169,7 +139,6 @@ const BrainDump: React.FC = () => {
                   className="text-[11px] bg-transparent outline-none text-muted-foreground w-16 placeholder:text-muted-foreground/40"
                 />
               </div>
-
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={save}
@@ -183,7 +152,6 @@ const BrainDump: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Search */}
       {entries.length > 0 && (
         <div className="glass rounded-lg flex items-center gap-2 px-3 py-2 mb-3">
           <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -196,7 +164,6 @@ const BrainDump: React.FC = () => {
         </div>
       )}
 
-      {/* Entries */}
       {filtered.length === 0 ? (
         <EmptyState
           icon={PenLine}
@@ -206,12 +173,7 @@ const BrainDump: React.FC = () => {
           onAction={!search ? () => setShowCompose(true) : undefined}
         />
       ) : (
-        <motion.div
-          variants={listStagger}
-          initial="hidden"
-          animate="show"
-          className="space-y-2 max-h-[300px] overflow-y-auto"
-        >
+        <motion.div variants={listStagger} initial="hidden" animate="show" className="space-y-2 max-h-[300px] overflow-y-auto">
           {filtered.map(entry => {
             const MoodIcon = entry.mood ? moodIcons[entry.mood - 1] : null;
             const isLong = entry.text.length > 200;
@@ -224,22 +186,14 @@ const BrainDump: React.FC = () => {
                 layout
                 className={`glass rounded-xl p-3 group relative border-l-2 ${borderClass} hover:shadow-[0_0_20px_rgba(99,102,241,0.05)] transition-shadow`}
               >
-                <button
-                  onClick={() => deleteEntry(entry.id)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
+                <button onClick={() => handleDelete(entry.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
                 </button>
-                <p className={`text-xs text-foreground whitespace-pre-wrap mb-2 pr-4 ${
-                  isLong && !isExpanded ? 'line-clamp-3' : ''
-                }`}>
+                <p className={`text-xs text-foreground whitespace-pre-wrap mb-2 pr-4 ${isLong && !isExpanded ? 'line-clamp-3' : ''}`}>
                   {entry.text}
                 </p>
                 {isLong && (
-                  <button
-                    onClick={() => toggleExpand(entry.id)}
-                    className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary mb-1.5 transition-colors"
-                  >
+                  <button onClick={() => toggleExpand(entry.id)} className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary mb-1.5 transition-colors">
                     {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     {isExpanded ? 'Show less' : 'Read more'}
                   </button>

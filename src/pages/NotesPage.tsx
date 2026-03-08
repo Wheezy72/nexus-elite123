@@ -1,51 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Tag, Search } from 'lucide-react';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import QuickCapture from '@/components/QuickCapture';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { useNotes } from '@/hooks/useCloudData';
 
 const CATEGORIES = ['All', 'Personal', 'Work', 'Ideas', 'Learning'];
 
 const NotesPage = () => {
-  const [notes, setNotes] = useLocalStorage<Note[]>('nexus-notes', []);
+  const { notes, addNote, updateNote, deleteNote: deleteNoteMut } = useNotes();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const debounceRef = useRef<NodeJS.Timeout>();
 
   const activeNote = notes.find(n => n.id === activeId);
 
-  const addNote = () => {
-    const n: Note = {
-      id: crypto.randomUUID(),
-      title: 'Untitled',
-      content: '',
-      category: category === 'All' ? 'Personal' : category,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setNotes(prev => [n, ...prev]);
-    setActiveId(n.id);
+  const handleAddNote = () => {
+    addNote.mutate(
+      { title: 'Untitled', content: '', category: category === 'All' ? 'Personal' : category },
+      { onSuccess: (data: any) => { if (data) setActiveId(data.id); } }
+    );
   };
 
-  const updateNote = (field: keyof Note, value: string) => {
-    setNotes(prev => prev.map(n =>
-      n.id === activeId ? { ...n, [field]: value, updatedAt: new Date().toISOString() } : n
-    ));
+  const handleUpdateNote = (field: string, value: string) => {
+    if (!activeId) return;
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      updateNote.mutate({ id: activeId, [field]: value });
+    }, 500);
   };
 
-  const deleteNote = (id: string) => {
-    setNotes(prev => prev.filter(n => n.id !== id));
+  const handleDeleteNote = (id: string) => {
+    deleteNoteMut.mutate(id);
     if (activeId === id) setActiveId(null);
   };
 
@@ -64,7 +52,6 @@ const NotesPage = () => {
       </motion.div>
       
       <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[60vh]">
-        {/* Sidebar */}
         <motion.div variants={staggerItem}>
           <GlassCard className="p-4 space-y-3">
             <div className="relative">
@@ -94,7 +81,7 @@ const NotesPage = () => {
 
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={addNote}
+              onClick={handleAddNote}
               className="w-full py-2 rounded-2xl bg-primary/15 text-primary text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-primary/25 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" /> New Note
@@ -121,7 +108,7 @@ const NotesPage = () => {
                       </div>
                       <motion.button
                         whileTap={{ scale: 0.8 }}
-                        onClick={e => { e.stopPropagation(); deleteNote(n.id); }}
+                        onClick={e => { e.stopPropagation(); handleDeleteNote(n.id); }}
                         className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -137,14 +124,13 @@ const NotesPage = () => {
           </GlassCard>
         </motion.div>
 
-        {/* Editor */}
         <motion.div variants={staggerItem} className="lg:col-span-2">
           <GlassCard className="p-5 flex flex-col min-h-[60vh]">
             {activeNote ? (
               <>
                 <input
                   value={activeNote.title}
-                  onChange={e => updateNote('title', e.target.value)}
+                  onChange={e => { handleUpdateNote('title', e.target.value); }}
                   className="text-lg font-bold text-foreground bg-transparent outline-none mb-1"
                   placeholder="Note title..."
                 />
@@ -152,7 +138,7 @@ const NotesPage = () => {
                   <Tag className="w-3 h-3 text-muted-foreground" />
                   <select
                     value={activeNote.category}
-                    onChange={e => updateNote('category', e.target.value)}
+                    onChange={e => handleUpdateNote('category', e.target.value)}
                     className="text-[10px] bg-transparent text-muted-foreground outline-none"
                   >
                     {CATEGORIES.filter(c => c !== 'All').map(c => (
@@ -165,7 +151,7 @@ const NotesPage = () => {
                 </div>
                 <textarea
                   value={activeNote.content}
-                  onChange={e => updateNote('content', e.target.value)}
+                  onChange={e => handleUpdateNote('content', e.target.value)}
                   placeholder="Start writing..."
                   className="flex-1 text-sm text-foreground/90 bg-transparent outline-none resize-none leading-relaxed"
                 />

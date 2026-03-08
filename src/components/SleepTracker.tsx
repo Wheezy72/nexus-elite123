@@ -1,20 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence, useSpring, useTransform, useMotionValue } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, Plus, X, TrendingUp, TrendingDown, Star, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useSleep } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
-import { rewardAction } from '@/lib/rewards';
-
-interface SleepEntry {
-  id: string;
-  date: string;
-  bedtime: string;
-  wakeTime: string;
-  quality: number;
-  hoursSlept: number;
-}
 
 const qualityLabels = ['Awful', 'Poor', 'Fair', 'Good', 'Great'];
 const qualityColors = ['text-red-400', 'text-orange-400', 'text-muted-foreground', 'text-emerald-400', 'text-primary'];
@@ -40,8 +30,10 @@ const barStagger = {
   show: { opacity: 1, transition: { staggerChildren: 0.08 } },
 };
 
+const barColors = ['hsl(250, 70%, 55%)', 'hsl(240, 65%, 52%)', 'hsl(230, 65%, 50%)', 'hsl(226, 70%, 55%)', 'hsl(220, 65%, 52%)', 'hsl(210, 65%, 50%)', 'hsl(200, 70%, 48%)'];
+
 const SleepTracker: React.FC = () => {
-  const [entries, setEntries] = useLocalStorage<SleepEntry[]>('nexus-sleep', []);
+  const { entries, addEntry } = useSleep();
   const [showAdd, setShowAdd] = useState(false);
   const [bedtime, setBedtime] = useState('23:00');
   const [wakeTime, setWakeTime] = useState('07:00');
@@ -49,16 +41,14 @@ const SleepTracker: React.FC = () => {
 
   const save = () => {
     const hours = calcHours(bedtime, wakeTime);
-    setEntries(prev => [{
-      id: crypto.randomUUID(),
+    addEntry.mutate({
       date: new Date().toISOString().split('T')[0],
       bedtime,
       wakeTime,
       quality,
       hoursSlept: hours,
-    }, ...prev]);
+    });
     setShowAdd(false);
-    rewardAction('sleep_log');
   };
 
   const weekData = useMemo(() => {
@@ -69,30 +59,17 @@ const SleepTracker: React.FC = () => {
       const dateStr = d.toISOString().split('T')[0];
       const dayLabel = d.toLocaleDateString('en', { weekday: 'short' });
       const entry = entries.find(e => e.date === dateStr);
-      data.push({
-        day: dayLabel,
-        hours: entry?.hoursSlept || 0,
-        quality: entry?.quality || 0,
-      });
+      data.push({ day: dayLabel, hours: entry?.hoursSlept || 0, quality: entry?.quality || 0 });
     }
     return data;
   }, [entries]);
 
   const last7 = entries.slice(0, 7);
-  const avgHours = last7.length > 0
-    ? Math.round(last7.reduce((a, e) => a + e.hoursSlept, 0) / last7.length * 10) / 10
-    : 0;
-  const avgQuality = last7.length > 0
-    ? Math.round(last7.reduce((a, e) => a + e.quality, 0) / last7.length * 10) / 10
-    : 0;
-
+  const avgHours = last7.length > 0 ? Math.round(last7.reduce((a, e) => a + e.hoursSlept, 0) / last7.length * 10) / 10 : 0;
+  const avgQuality = last7.length > 0 ? Math.round(last7.reduce((a, e) => a + e.quality, 0) / last7.length * 10) / 10 : 0;
   const bestNight = last7.length > 0 ? last7.reduce((best, e) => e.hoursSlept > best.hoursSlept ? e : best) : null;
   const worstNight = last7.length > 0 ? last7.reduce((worst, e) => e.hoursSlept < worst.hoursSlept ? e : worst) : null;
-
   const recentEntries = entries.slice(0, 5);
-
-  // Gradient bar colors
-  const barColors = ['hsl(250, 70%, 55%)', 'hsl(240, 65%, 52%)', 'hsl(230, 65%, 50%)', 'hsl(226, 70%, 55%)', 'hsl(220, 65%, 52%)', 'hsl(210, 65%, 50%)', 'hsl(200, 70%, 48%)'];
 
   return (
     <GlassCard className="p-6">
@@ -134,9 +111,7 @@ const SleepTracker: React.FC = () => {
                       whileHover={{ scale: 1.08 }}
                       onClick={() => setQuality(i + 1)}
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
-                        quality === i + 1
-                          ? `bg-primary/20 ${qualityColors[i]} shadow-[0_0_10px_rgba(99,102,241,0.15)]`
-                          : 'glass text-muted-foreground/60'
+                        quality === i + 1 ? `bg-primary/20 ${qualityColors[i]} shadow-[0_0_10px_rgba(99,102,241,0.15)]` : 'glass text-muted-foreground/60'
                       }`}
                     >
                       {label}
@@ -144,9 +119,7 @@ const SleepTracker: React.FC = () => {
                   ))}
                 </div>
               </div>
-              <div className="text-center text-xs text-muted-foreground">
-                {calcHours(bedtime, wakeTime)}h of sleep
-              </div>
+              <div className="text-center text-xs text-muted-foreground">{calcHours(bedtime, wakeTime)}h of sleep</div>
               <motion.button whileTap={{ scale: 0.95 }} onClick={save} className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium">Log Sleep</motion.button>
             </div>
           </motion.div>
@@ -157,7 +130,6 @@ const SleepTracker: React.FC = () => {
         <EmptyState icon={Moon} title="No sleep data" description="Log your sleep to track patterns" actionLabel="Log Sleep" onAction={() => setShowAdd(true)} />
       ) : (
         <motion.div variants={barStagger} initial="hidden" animate="show">
-          {/* Insights Row */}
           <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="glass rounded-lg p-2.5 text-center">
               <p className="text-[9px] text-muted-foreground/60 uppercase tracking-wide mb-0.5">Avg Quality</p>
@@ -186,42 +158,27 @@ const SleepTracker: React.FC = () => {
             )}
           </div>
 
-          {/* Chart */}
           <div className="h-[140px] mb-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 10 }} />
                 <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 10 }} domain={[0, 12]} />
-                <Tooltip
-                  contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
-                  formatter={(value: number) => [`${value}h`, 'Sleep']}
-                />
+                <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }} formatter={(value: number) => [`${value}h`, 'Sleep']} />
                 <Bar dataKey="hours" radius={[4, 4, 0, 0]} name="Hours">
-                  {weekData.map((_, i) => (
-                    <Cell key={i} fill={barColors[i]} />
-                  ))}
+                  {weekData.map((_, i) => (<Cell key={i} fill={barColors[i]} />))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Recent History Timeline */}
           {recentEntries.length > 0 && (
             <div>
               <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wide mb-2">Recent</p>
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {recentEntries.map((entry, i) => (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06 }}
-                    className="glass rounded-lg p-2 min-w-[90px] shrink-0"
-                  >
-                    <p className="text-[9px] text-muted-foreground/60 mb-1">
-                      {new Date(entry.date).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </p>
+                  <motion.div key={entry.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className="glass rounded-lg p-2 min-w-[90px] shrink-0">
+                    <p className="text-[9px] text-muted-foreground/60 mb-1">{new Date(entry.date).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</p>
                     <div className="flex items-center gap-1 mb-0.5">
                       <Clock className="w-2.5 h-2.5 text-muted-foreground/40" />
                       <span className="text-xs font-semibold text-foreground">{entry.hoursSlept}h</span>

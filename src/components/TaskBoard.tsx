@@ -4,7 +4,7 @@ import {
   Plus, X, CheckCircle2, Circle, Trash2, ListTodo, ArrowRight, Clock,
   Filter, Calendar, ChevronDown, ChevronUp, Square, CheckSquare
 } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useTasks } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
 import { rewardAction } from '@/lib/rewards';
@@ -50,7 +50,7 @@ const cardAnim = {
 };
 
 const TaskBoard: React.FC = () => {
-  const [tasks, setTasks] = useLocalStorage<Task[]>('nexus-tasks', []);
+  const { tasks, addTask: addTaskMut, updateTask: updateTaskMut, deleteTask: deleteTaskMut } = useTasks();
   const [newText, setNewText] = useState('');
   const [newPriority, setNewPriority] = useState<Task['priority']>('medium');
   const [newDueDate, setNewDueDate] = useState('');
@@ -61,48 +61,49 @@ const TaskBoard: React.FC = () => {
 
   const addTask = () => {
     if (!newText.trim()) return;
-    setTasks(prev => [...prev, {
-      id: crypto.randomUUID(),
+    addTaskMut.mutate({
       text: newText.trim(),
       column: 'todo',
       priority: newPriority,
-      createdAt: new Date().toISOString(),
       dueDate: newDueDate || undefined,
       subtasks: [],
-    }]);
+    });
     setNewText('');
     setNewDueDate('');
     setShowAdd(false);
-    rewardAction('task_create');
   };
 
   const moveTask = (id: string, to: Task['column']) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, column: to } : t));
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    updateTaskMut.mutate({ ...task, column: to });
     if (to === 'done') rewardAction('task_complete');
     else rewardAction('task_move');
   };
 
   const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+    deleteTaskMut.mutate(id);
   };
 
   const addSubtask = (taskId: string) => {
     const text = subtaskInputs[taskId]?.trim();
     if (!text) return;
-    setTasks(prev => prev.map(t =>
-      t.id === taskId
-        ? { ...t, subtasks: [...t.subtasks, { id: crypto.randomUUID(), text, done: false }] }
-        : t
-    ));
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    updateTaskMut.mutate({
+      ...task,
+      subtasks: [...(task.subtasks || []), { id: crypto.randomUUID(), text, done: false }],
+    });
     setSubtaskInputs(prev => ({ ...prev, [taskId]: '' }));
   };
 
   const toggleSubtask = (taskId: string, subId: string) => {
-    setTasks(prev => prev.map(t =>
-      t.id === taskId
-        ? { ...t, subtasks: t.subtasks.map(s => s.id === subId ? { ...s, done: !s.done } : s) }
-        : t
-    ));
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    updateTaskMut.mutate({
+      ...task,
+      subtasks: (task.subtasks || []).map(s => s.id === subId ? { ...s, done: !s.done } : s),
+    });
   };
 
   const toggleExpand = (id: string) => {
@@ -227,7 +228,6 @@ const TaskBoard: React.FC = () => {
         <EmptyState icon={ListTodo} title="No tasks yet" description="Create your first task to start organizing" actionLabel="Create Task" onAction={() => setShowAdd(true)} />
       ) : (
         <>
-          {/* Progress bar */}
           {totalTasks > 0 && (
             <div className="mb-4">
               <div className="h-1 w-full rounded-full bg-white/[0.04] overflow-hidden">
@@ -240,7 +240,6 @@ const TaskBoard: React.FC = () => {
             </div>
           )}
 
-          {/* Columns */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
             {COLUMNS.map(col => {
               const colTasks = filteredTasks.filter(t => t.column === col.key);
@@ -254,12 +253,7 @@ const TaskBoard: React.FC = () => {
                     </div>
                     <div className={`h-[2px] rounded-full bg-gradient-to-r ${col.gradient}`} />
                   </div>
-                  <motion.div
-                    variants={colStagger}
-                    initial="hidden"
-                    animate="show"
-                    className="space-y-1.5 min-h-[40px]"
-                  >
+                  <motion.div variants={colStagger} initial="hidden" animate="show" className="space-y-1.5 min-h-[40px]">
                     <AnimatePresence>
                       {colTasks.map(task => {
                         const next = nextCol(task.column);
@@ -312,7 +306,6 @@ const TaskBoard: React.FC = () => {
                                   )}
                                 </div>
 
-                                {/* Subtasks */}
                                 <AnimatePresence>
                                   {(isExpanded || task.subtasks.length === 0) && (task.column === 'todo' || task.column === 'progress') && (
                                     <motion.div
@@ -365,7 +358,6 @@ const TaskBoard: React.FC = () => {
                                   )}
                                 </AnimatePresence>
                               </div>
-                              {/* Actions */}
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                 {!isExpanded && task.subtasks.length === 0 && (task.column === 'todo' || task.column === 'progress') && (
                                   <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleExpand(task.id)}
