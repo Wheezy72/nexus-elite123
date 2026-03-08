@@ -94,7 +94,10 @@ const FlowEngine: React.FC = () => {
   const startTimer = useCallback(() => {
     setIsRunning(true);
     sessionStart.current = Date.now();
-  }, []);
+    warningFiredRef.current = false;
+    resetTabTitle();
+    if (notificationsOn) requestNotificationPermission();
+  }, [notificationsOn]);
 
   const pauseTimer = useCallback(() => {
     setIsRunning(false);
@@ -102,6 +105,8 @@ const FlowEngine: React.FC = () => {
 
   const resetTimer = useCallback(() => {
     setIsRunning(false);
+    warningFiredRef.current = false;
+    resetTabTitle();
     setTimeLeft((isFocus ? focusMin : breakMin) * 60);
   }, [isFocus, focusMin, breakMin]);
 
@@ -118,6 +123,17 @@ const FlowEngine: React.FC = () => {
     }
     intervalRef.current = window.setInterval(() => {
       setTimeLeft(prev => {
+        // Warning at 60s remaining
+        if (prev === 61 && !warningFiredRef.current && notificationsOn) {
+          warningFiredRef.current = true;
+          playWarningTick();
+          setTabBadge(true, isFocus ? 'Focus ending' : 'Break ending');
+          sendTimerNotification(
+            isFocus ? '⏰ Focus ending soon!' : '☕ Break ending soon!',
+            'One minute remaining — wrap up!'
+          );
+        }
+
         if (prev <= 1) {
           const elapsed = Math.round((Date.now() - sessionStart.current) / 1000);
           setSessions(s => [...s, {
@@ -126,7 +142,21 @@ const FlowEngine: React.FC = () => {
             duration: elapsed,
             type: isFocus ? 'focus' : 'break',
           }]);
+          
+          // Completion notification + chime
+          if (notificationsOn) {
+            playAlertChime();
+            sendTimerNotification(
+              isFocus ? '✅ Focus session complete!' : '🎉 Break over!',
+              isFocus ? 'Time for a break.' : 'Back to focus!'
+            );
+            setTabBadge(true, isFocus ? 'Session done' : 'Break done');
+            // Clear badge after 5s
+            setTimeout(() => resetTabTitle(), 5000);
+          }
+
           setIsRunning(false);
+          warningFiredRef.current = false;
           const nextIsFocus = !isFocus;
           setIsFocus(nextIsFocus);
           return (nextIsFocus ? focusMin : breakMin) * 60;
@@ -135,7 +165,7 @@ const FlowEngine: React.FC = () => {
       });
     }, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isRunning, isFocus, setSessions, focusMin, breakMin]);
+  }, [isRunning, isFocus, setSessions, focusMin, breakMin, notificationsOn]);
 
   const toggleAudio = () => {
     if (audioOn) {
