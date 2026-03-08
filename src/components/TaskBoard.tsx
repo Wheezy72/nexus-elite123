@@ -7,6 +7,7 @@ import {
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
+import { rewardAction } from '@/lib/rewards';
 
 interface SubTask {
   id: string;
@@ -72,10 +73,13 @@ const TaskBoard: React.FC = () => {
     setNewText('');
     setNewDueDate('');
     setShowAdd(false);
+    rewardAction('task_create');
   };
 
   const moveTask = (id: string, to: Task['column']) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, column: to } : t));
+    if (to === 'done') rewardAction('task_complete');
+    else rewardAction('task_move');
   };
 
   const deleteTask = (id: string) => {

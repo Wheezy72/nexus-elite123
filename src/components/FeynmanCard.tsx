@@ -4,6 +4,7 @@ import { RotateCcw, BookOpen, Plus, Trash2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
+import { rewardAction } from '@/lib/rewards';
 
 interface Reflection {
   id: string;
@@ -39,6 +40,7 @@ const FeynmanCard: React.FC = () => {
     setFront('');
     setBack('');
     setIsFlipped(false);
+    rewardAction('feynman_save');
   };
 
   const deleteReflection = (id: string) => {

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PenLine, Search, X, Smile, Meh, Frown, Laugh, Angry, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
+import { rewardAction } from '@/lib/rewards';
 import EmptyState from './EmptyState';
 
 interface JournalEntry {
@@ -72,6 +73,7 @@ const BrainDump: React.FC = () => {
     setMood(null);
     setTags([]);
     setShowCompose(false);
+    rewardAction('journal_entry');
   };
 
   const deleteEntry = (id: string) => {

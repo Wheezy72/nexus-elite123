@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { rewardAction } from '@/lib/rewards';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import PageLayout from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
@@ -38,6 +39,7 @@ const MoodPage = () => {
     }]);
     setSelectedMood(null);
     setNote('');
+    rewardAction('mood_log');
   };
 
   const last7 = Array.from({ length: 7 }, (_, i) => {
