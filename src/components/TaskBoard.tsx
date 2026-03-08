@@ -308,7 +308,7 @@ const TaskBoard: React.FC = () => {
 
                                 {/* Subtasks */}
                                 <AnimatePresence>
-                                  {(isExpanded || task.subtasks.length === 0) && task.column !== 'done' && (
+                                  {(isExpanded || task.subtasks.length === 0) && (task.column === 'todo' || task.column === 'progress') && (
                                     <motion.div
                                       initial={{ height: 0, opacity: 0 }}
                                       animate={{ height: 'auto', opacity: 1 }}
