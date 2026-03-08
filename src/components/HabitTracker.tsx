@@ -4,6 +4,7 @@ import { Check, Plus, X, Flame, Target } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
+import { rewardAction } from '@/lib/rewards';
 
 interface Habit {
   id: string;
