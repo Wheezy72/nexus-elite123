@@ -58,6 +58,7 @@ const SleepTracker: React.FC = () => {
       hoursSlept: hours,
     }, ...prev]);
     setShowAdd(false);
+    rewardAction('sleep_log');
   };
 
   const weekData = useMemo(() => {

@@ -73,6 +73,7 @@ const BrainDump: React.FC = () => {
     setMood(null);
     setTags([]);
     setShowCompose(false);
+    rewardAction('journal_entry');
   };
 
   const deleteEntry = (id: string) => {

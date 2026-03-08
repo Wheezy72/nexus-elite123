@@ -78,6 +78,8 @@ const TaskBoard: React.FC = () => {
 
   const moveTask = (id: string, to: Task['column']) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, column: to } : t));
+    if (to === 'done') rewardAction('task_complete');
+    else rewardAction('task_move');
   };
 
   const deleteTask = (id: string) => {
