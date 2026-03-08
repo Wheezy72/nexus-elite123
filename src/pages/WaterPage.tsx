@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Droplets, Plus, Minus, RotateCcw } from 'lucide-react';
 import { rewardAction } from '@/lib/rewards';
 import { haptic } from '@/lib/haptics';
 import PageLayout from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
+import HydrationTips from '@/components/HydrationTips';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const GOAL = 8; // glasses
@@ -13,6 +14,7 @@ const WaterPage = () => {
   const todayKey = new Date().toISOString().split('T')[0];
   const [log, setLog] = useLocalStorage<Record<string, number>>('nexus-water-log', {});
   const [goal, setGoal] = useLocalStorage<number>('nexus-water-goal', GOAL);
+  const [, setLastDrink] = useLocalStorage<string | null>('nexus-last-drink', null);
 
   const current = log[todayKey] || 0;
   const pct = Math.min(current / goal, 1);
@@ -22,6 +24,7 @@ const WaterPage = () => {
     setLog(prev => ({ ...prev, [todayKey]: newVal }));
     if (n > 0) {
       haptic('light');
+      setLastDrink(new Date().toISOString());
       rewardAction('water_drink');
       if (newVal >= goal && (log[todayKey] || 0) < goal) {
         rewardAction('water_goal');
@@ -41,9 +44,9 @@ const WaterPage = () => {
   return (
     <PageLayout>
       <h1 className="text-2xl font-bold text-foreground mb-6">Hydration Tracker</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Glass fill animation */}
-        <GlassCard className="p-8 flex flex-col items-center">
+        <GlassCard className="p-8 flex flex-col items-center lg:col-span-2">
           <div className="relative w-40 h-56 rounded-2xl border-2 border-primary/20 overflow-hidden mb-6">
             {/* Water fill */}
             <motion.div
@@ -59,7 +62,7 @@ const WaterPage = () => {
               transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
             >
               <svg viewBox="0 0 160 12" className="w-full">
-                <path d="M0 6 Q20 0 40 6 Q60 12 80 6 Q100 0 120 6 Q140 12 160 6 V12 H0Z" fill="hsl(226 70% 55.5% / 0.3)" />
+                <path d="M0 6 Q20 0 40 6 Q60 12 80 6 Q100 0 120 6 Q140 12 160 6 V12 H0Z" fill="hsl(var(--primary) / 0.3)" />
               </svg>
             </motion.div>
             {/* Count */}
@@ -77,7 +80,7 @@ const WaterPage = () => {
               <Minus className="w-5 h-5" />
             </motion.button>
             <motion.button whileTap={{ scale: 0.85 }} onClick={() => add(1)}
-              className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_25px_rgba(99,102,241,0.3)]">
+              className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_25px_hsl(var(--primary)/0.3)]">
               <Plus className="w-6 h-6" />
             </motion.button>
             <motion.button whileTap={{ scale: 0.85 }} onClick={reset}
@@ -100,46 +103,51 @@ const WaterPage = () => {
           </div>
         </GlassCard>
 
-        {/* Weekly view */}
-        <GlassCard className="p-6">
-          <h2 className="text-sm font-semibold text-foreground mb-4">This Week</h2>
-          <div className="space-y-3">
-            {last7.map((d, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground w-10">{d.day}</span>
-                <div className="flex-1 h-6 glass rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-primary/40 to-primary/60 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((d.count / goal) * 100, 100)}%` }}
-                    transition={{ delay: i * 0.05, duration: 0.5 }}
-                  />
-                </div>
-                <span className="text-xs text-foreground tabular-nums w-6 text-right">{d.count}</span>
-                {d.count >= goal && <span className="text-xs">✅</span>}
-              </div>
-            ))}
-          </div>
+        {/* Side panel */}
+        <div className="space-y-4">
+          <HydrationTips />
 
-          {/* Streak */}
-          <div className="mt-6 p-4 glass rounded-xl text-center">
-            <p className="text-xs text-muted-foreground mb-1">Current Streak</p>
-            <p className="text-2xl font-bold text-primary tabular-nums">
-              {(() => {
-                let streak = 0;
-                for (let i = 0; i < 30; i++) {
-                  const d = new Date();
-                  d.setDate(d.getDate() - i);
-                  const k = d.toISOString().split('T')[0];
-                  if ((log[k] || 0) >= goal) streak++;
-                  else if (i > 0) break;
-                }
-                return streak;
-              })()}
-            </p>
-            <p className="text-[10px] text-muted-foreground">days hitting goal</p>
-          </div>
-        </GlassCard>
+          {/* Weekly view */}
+          <GlassCard className="p-6">
+            <h2 className="text-sm font-semibold text-foreground mb-4">This Week</h2>
+            <div className="space-y-3">
+              {last7.map((d, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-10">{d.day}</span>
+                  <div className="flex-1 h-6 glass rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-primary/40 to-primary/60 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((d.count / goal) * 100, 100)}%` }}
+                      transition={{ delay: i * 0.05, duration: 0.5 }}
+                    />
+                  </div>
+                  <span className="text-xs text-foreground tabular-nums w-6 text-right">{d.count}</span>
+                  {d.count >= goal && <span className="text-xs">✅</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* Streak */}
+            <div className="mt-6 p-4 glass rounded-xl text-center">
+              <p className="text-xs text-muted-foreground mb-1">Current Streak</p>
+              <p className="text-2xl font-bold text-primary tabular-nums">
+                {(() => {
+                  let streak = 0;
+                  for (let i = 0; i < 30; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const k = d.toISOString().split('T')[0];
+                    if ((log[k] || 0) >= goal) streak++;
+                    else if (i > 0) break;
+                  }
+                  return streak;
+                })()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">days hitting goal</p>
+            </div>
+          </GlassCard>
+        </div>
       </div>
     </PageLayout>
   );

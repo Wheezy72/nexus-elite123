@@ -2,6 +2,8 @@ import PageLayout from '@/components/PageLayout';
 import BrainDump from '@/components/BrainDump';
 import FeynmanCard from '@/components/FeynmanCard';
 import JournalExtras from '@/components/JournalExtras';
+import JournalStats from '@/components/JournalStats';
+import MoodTimeline from '@/components/MoodTimeline';
 import XPBar from '@/components/XPBar';
 
 const JournalPage = () => (
@@ -13,7 +15,11 @@ const JournalPage = () => (
         <BrainDump />
         <FeynmanCard />
       </div>
-      <JournalExtras />
+      <div className="space-y-4">
+        <JournalStats />
+        <MoodTimeline />
+        <JournalExtras />
+      </div>
     </div>
   </PageLayout>
 );

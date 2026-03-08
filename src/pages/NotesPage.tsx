@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Tag, Search } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
+import QuickCapture from '@/components/QuickCapture';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface Note {
@@ -57,6 +58,10 @@ const NotesPage = () => {
   return (
     <PageLayout>
       <h1 className="text-2xl font-bold text-foreground mb-6">Notes</h1>
+      
+      {/* Quick Capture */}
+      <QuickCapture />
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[60vh]">
         {/* Sidebar */}
         <GlassCard className="p-4 space-y-3">
@@ -108,7 +113,7 @@ const NotesPage = () => {
                   exit={{ opacity: 0, x: -10 }}
                   onClick={() => setActiveId(n.id)}
                   className={`w-full text-left p-3 rounded-xl transition-all group ${
-                    activeId === n.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/[0.03]'
+                    activeId === n.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-accent/20'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -125,7 +130,7 @@ const NotesPage = () => {
                     </motion.button>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/[0.05] text-muted-foreground">{n.category}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/30 text-muted-foreground">{n.category}</span>
                   </div>
                 </motion.button>
               ))}
