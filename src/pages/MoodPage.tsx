@@ -39,6 +39,7 @@ const MoodPage = () => {
     }]);
     setSelectedMood(null);
     setNote('');
+    rewardAction('mood_log');
   };
 
   const last7 = Array.from({ length: 7 }, (_, i) => {
