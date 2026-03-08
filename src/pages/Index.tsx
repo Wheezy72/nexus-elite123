@@ -1,108 +1,92 @@
 import { useCallback } from 'react';
-import FlowEngine from '@/components/FlowEngine';
-import MicroLogger from '@/components/MicroLogger';
-import FeynmanCard from '@/components/FeynmanCard';
-import HabitTracker from '@/components/HabitTracker';
-import FocusStats from '@/components/FocusStats';
-import AmbientScenes from '@/components/AmbientScenes';
-import BrainDump from '@/components/BrainDump';
-import PulseBreather from '@/components/PulseBreather';
-import VisionShimmer from '@/components/VisionShimmer';
-import TaskBoard from '@/components/TaskBoard';
-import GoalTracker from '@/components/GoalTracker';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { Timer, ListTodo, Target, PenLine, Smile, Moon, BookOpen, Droplets, BarChart3, TrendingUp, Zap, ArrowRight } from 'lucide-react';
+import PageLayout from '@/components/PageLayout';
+import GlassCard from '@/components/GlassCard';
 import DailyQuotes from '@/components/DailyQuotes';
-import SleepTracker from '@/components/SleepTracker';
-import Navbar from '@/components/Navbar';
-import { startAudio, stopAudio, getIsPlaying, type NoiseType } from '@/lib/audioEngine';
 
-const Index = () => {
-  const handleApplyScene = useCallback((volumes: Record<NoiseType, number>, tone: number) => {
-    localStorage.setItem('nexus-noise-vols', JSON.stringify(volumes));
-    localStorage.setItem('nexus-tone', JSON.stringify(tone));
-    if (getIsPlaying()) {
-      stopAudio();
-      startAudio({ noiseVolumes: volumes, tone, customAudioUrl: null, customVolume: 50 });
-    }
-    window.dispatchEvent(new Event('storage'));
-  }, []);
+const modules = [
+  { to: '/flow', label: 'Flow Engine', desc: 'Pomodoro timer with ambient sounds', icon: Timer, color: 'from-blue-500/20 to-indigo-500/20' },
+  { to: '/tasks', label: 'Task Board', desc: 'Kanban-style task management', icon: ListTodo, color: 'from-emerald-500/20 to-teal-500/20' },
+  { to: '/habits', label: 'Habit Tracker', desc: 'Build and track daily habits', icon: Target, color: 'from-orange-500/20 to-amber-500/20' },
+  { to: '/journal', label: 'Brain Dump', desc: 'Journaling & Feynman technique', icon: PenLine, color: 'from-purple-500/20 to-fuchsia-500/20' },
+  { to: '/mood', label: 'Mood Logger', desc: 'Track your emotional patterns', icon: Smile, color: 'from-pink-500/20 to-rose-500/20' },
+  { to: '/sleep', label: 'Sleep Tracker', desc: 'Monitor sleep quality & patterns', icon: Moon, color: 'from-indigo-500/20 to-violet-500/20' },
+  { to: '/notes', label: 'Notes', desc: 'Markdown notes with categories', icon: BookOpen, color: 'from-cyan-500/20 to-sky-500/20' },
+  { to: '/water', label: 'Hydration', desc: 'Daily water intake tracking', icon: Droplets, color: 'from-sky-500/20 to-blue-500/20' },
+  { to: '/stats', label: 'Pomodoro Stats', desc: 'Focus time analytics & trends', icon: BarChart3, color: 'from-red-500/20 to-orange-500/20' },
+];
 
-  return (
-    <div className="min-h-screen liquid-mesh-bg text-foreground">
-      {/* Background layers */}
-      <div className="aurora-blob" />
-      <div className="noise-overlay" />
-      <div className="grid-overlay" />
-      <VisionShimmer />
-
-      {/* Navbar */}
-      <Navbar />
-
-      {/* Main content */}
-      <main className="relative z-10 px-4 sm:px-6 pb-10 pt-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
-          {/* Flow Engine */}
-          <div id="section-flow" className="lg:row-span-2 scroll-mt-20">
-            <FlowEngine />
-          </div>
-
-          {/* Mood Logger */}
-          <div id="section-mood" className="scroll-mt-20">
-            <MicroLogger />
-          </div>
-
-          {/* Daily Quote */}
-          <div className="scroll-mt-20">
-            <DailyQuotes />
-          </div>
-
-          {/* Task Board - wide */}
-          <div id="section-tasks" className="lg:col-span-2 scroll-mt-20">
-            <TaskBoard />
-          </div>
-
-          {/* Ambient Scenes */}
-          <div className="scroll-mt-20">
-            <AmbientScenes onApplyScene={handleApplyScene} />
-          </div>
-
-          {/* Habit Tracker - wide */}
-          <div id="section-habits" className="lg:col-span-2 scroll-mt-20">
-            <HabitTracker />
-          </div>
-
-          {/* Goal Tracker */}
-          <div id="section-goals" className="scroll-mt-20">
-            <GoalTracker />
-          </div>
-
-          {/* Brain Dump */}
-          <div id="section-journal" className="scroll-mt-20">
-            <BrainDump />
-          </div>
-
-          {/* Feynman Card */}
-          <div className="scroll-mt-20">
-            <FeynmanCard />
-          </div>
-
-          {/* Pulse Breather */}
-          <div className="scroll-mt-20">
-            <PulseBreather />
-          </div>
-
-          {/* Sleep Tracker */}
-          <div id="section-sleep" className="scroll-mt-20">
-            <SleepTracker />
-          </div>
-
-          {/* Focus Stats - wide */}
-          <div className="lg:col-span-2 scroll-mt-20">
-            <FocusStats />
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.06 } },
 };
+const item = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1 },
+};
+
+const Index = () => (
+  <PageLayout>
+    {/* Hero */}
+    <div className="text-center mb-10">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+        className="inline-flex items-center gap-2 mb-4"
+      >
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/20 flex items-center justify-center">
+          <Zap className="w-5 h-5 text-primary" />
+        </div>
+      </motion.div>
+      <motion.h1
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-2"
+      >
+        Nexus <span className="text-primary">Elite</span>
+      </motion.h1>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="text-sm text-muted-foreground max-w-md mx-auto"
+      >
+        Your personal productivity command center
+      </motion.p>
+    </div>
+
+    {/* Module Grid */}
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+    >
+      {modules.map(mod => (
+        <motion.div key={mod.to} variants={item}>
+          <Link to={mod.to}>
+            <GlassCard className="p-5 group hover:border-primary/20 transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.1)]">
+              <div className="flex items-start justify-between">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${mod.color} flex items-center justify-center mb-3`}>
+                  <mod.icon className="w-5 h-5 text-foreground" />
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </div>
+              <h3 className="text-sm font-semibold text-foreground mb-1">{mod.label}</h3>
+              <p className="text-xs text-muted-foreground">{mod.desc}</p>
+            </GlassCard>
+          </Link>
+        </motion.div>
+      ))}
+    </motion.div>
+
+    {/* Daily Quote */}
+    <DailyQuotes />
+  </PageLayout>
+);
 
 export default Index;
