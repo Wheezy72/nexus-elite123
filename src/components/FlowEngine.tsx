@@ -204,6 +204,7 @@ const FlowEngine: React.FC = () => {
   useEffect(() => () => {
     if (getIsPlaying()) stopAudio();
     if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+    resetTabTitle();
   }, []);
 
   const mins = Math.floor(timeLeft / 60);
