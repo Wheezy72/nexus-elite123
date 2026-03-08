@@ -68,18 +68,8 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  const handleGoogle = async () => {
-    setLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) throw result.error;
-    } catch (err: any) {
-      toast.error(err.message || 'Google sign-in failed');
-      setLoading(false);
-    }
-  };
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
