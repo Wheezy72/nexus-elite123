@@ -363,7 +363,7 @@ const TaskBoard: React.FC = () => {
                               </div>
                               {/* Actions */}
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                {!isExpanded && task.subtasks.length === 0 && task.column !== 'done' && (
+                                {!isExpanded && task.subtasks.length === 0 && (task.column === 'todo' || task.column === 'progress') && (
                                   <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleExpand(task.id)}
                                     className="p-1 text-muted-foreground/40 hover:text-primary" title="Add subtasks">
                                     <Plus className="w-3 h-3" />

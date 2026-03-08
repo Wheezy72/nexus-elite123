@@ -29,11 +29,9 @@ function calcHours(bed: string, wake: string): number {
 }
 
 const AnimatedNumber: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
-  const mv = useMotionValue(0);
-  const spring = useSpring(mv, { stiffness: 100, damping: 20 });
-  React.useEffect(() => { mv.set(value); }, [value, mv]);
-  const display = useTransform(spring, v => v.toFixed(1));
-  return <motion.span>{display}{suffix}</motion.span>;
+  const [display, setDisplay] = React.useState(value.toFixed(1));
+  React.useEffect(() => { setDisplay(value.toFixed(1)); }, [value]);
+  return <span>{display}{suffix}</span>;
 };
 
 const barStagger = {
