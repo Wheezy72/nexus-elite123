@@ -16,7 +16,7 @@
     --secondary-foreground: 0 0% 98%;
     --muted: 240 5% 15%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 5% 15%;
+    --accent: 280 60% 55%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -33,6 +33,11 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 226 70% 55.5%;
+
+    --neon-glow: 226 80% 60%;
+    --neon-purple: 280 70% 60%;
+    --neon-cyan: 190 80% 55%;
+    --neon-pink: 330 80% 60%;
   }
 }
 
@@ -48,7 +53,6 @@
 
 /* === PREMIUM BACKGROUND === */
 
-/* Animated aurora blobs */
 @keyframes blob-float-1 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   25% { transform: translate(30px, -50px) scale(1.1); }
@@ -66,6 +70,12 @@
   33% { transform: translate(40px, 40px) scale(1.15); }
   66% { transform: translate(-30px, -30px) scale(0.95); }
 }
+@keyframes blob-float-4 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  25% { transform: translate(-50px, 20px) scale(1.12) rotate(5deg); }
+  50% { transform: translate(20px, -50px) scale(0.9) rotate(-3deg); }
+  75% { transform: translate(40px, 40px) scale(1.08) rotate(2deg); }
+}
 
 .liquid-mesh-bg {
   position: relative;
@@ -79,12 +89,12 @@
   position: fixed;
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.4;
+  opacity: 0.45;
   pointer-events: none;
   z-index: 0;
 }
 
-/* Large indigo blob top-left */
+/* Indigo blob */
 .liquid-mesh-bg::before {
   width: 600px;
   height: 600px;
@@ -94,7 +104,7 @@
   animation: blob-float-1 25s ease-in-out infinite;
 }
 
-/* Purple-pink blob bottom-right */
+/* Purple-pink blob */
 .liquid-mesh-bg::after {
   width: 500px;
   height: 500px;
@@ -104,7 +114,7 @@
   animation: blob-float-2 30s ease-in-out infinite;
 }
 
-/* Third blob via a child pseudo element */
+/* Cyan blob */
 .aurora-blob {
   position: fixed;
   width: 450px;
@@ -113,14 +123,30 @@
   left: 50%;
   border-radius: 50%;
   filter: blur(140px);
-  opacity: 0.25;
-  background: radial-gradient(circle, hsl(200 70% 25%) 0%, hsl(230 50% 12%) 50%, transparent 70%);
+  opacity: 0.3;
+  background: radial-gradient(circle, hsl(190 70% 25%) 0%, hsl(230 50% 12%) 50%, transparent 70%);
   animation: blob-float-3 20s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
 }
 
-/* Noise texture overlay for depth */
+/* Extra pink blob for more color */
+.aurora-blob::after {
+  content: '';
+  position: fixed;
+  width: 350px;
+  height: 350px;
+  top: 10%;
+  right: 20%;
+  border-radius: 50%;
+  filter: blur(130px);
+  opacity: 0.2;
+  background: radial-gradient(circle, hsl(330 70% 30%) 0%, hsl(280 50% 15%) 50%, transparent 70%);
+  animation: blob-float-4 22s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Noise texture */
 .noise-overlay {
   position: fixed;
   inset: 0;
@@ -132,20 +158,20 @@
   background-size: 256px 256px;
 }
 
-/* Grid lines for cyberpunk feel */
+/* Grid lines */
 .grid-overlay {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.02;
+  opacity: 0.025;
   background-image:
-    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    linear-gradient(rgba(99,102,241,0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.15) 1px, transparent 1px);
   background-size: 60px 60px;
 }
 
-/* Breathing gradient sync */
+/* Breathing gradient */
 @keyframes breathe {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.6; }
@@ -154,7 +180,7 @@
   animation: breathe 4s ease-in-out infinite;
 }
 
-/* Glass card base */
+/* Glass card */
 .glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(40px);
@@ -170,7 +196,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Vision shimmer overlay */
+/* Vision shimmer */
 @keyframes shimmer-iris {
   0% { background-position: -200% 0; opacity: 0; }
   10% { opacity: 0.15; }
@@ -194,6 +220,12 @@
 }
 .pulse-ring {
   animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+/* Glow hover effect for cards */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(99,102,241,0); }
+  50% { box-shadow: 0 0 20px rgba(99,102,241,0.15); }
 }
 
 /* Scrollbar */
