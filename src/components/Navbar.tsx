@@ -4,8 +4,10 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   Zap, Timer, Smile, ListTodo, Target, Moon as MoonIcon,
   Droplets, BarChart3, Home, PenLine, BookOpen, Settings,
-  Menu, X
+  Menu, X, UserCircle
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getAvatarById } from '@/pages/ProfilePage';
 
 interface NavItem {
   to: string;
@@ -30,12 +32,14 @@ const navItems: NavItem[] = [
 const Navbar: React.FC = () => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { profile } = useAuth();
+  const avatar = getAvatarById(profile?.avatar_url ?? null);
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
   return (
     <>
-      {/* Top bar — both desktop & mobile */}
+      {/* Top bar */}
       <nav className="sticky top-0 z-50 glass-nav-premium">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
@@ -56,6 +60,18 @@ const Navbar: React.FC = () => {
               <p className="text-[11px] text-muted-foreground hidden sm:block">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
+
+              {/* Profile avatar */}
+              <NavLink to="/profile" className="shrink-0">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatar.bg} border border-white/10 flex items-center justify-center text-sm`}
+                >
+                  {avatar.emoji}
+                </motion.div>
+              </NavLink>
+
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setOpen(v => !v)}
