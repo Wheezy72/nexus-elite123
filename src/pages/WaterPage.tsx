@@ -51,7 +51,7 @@ const WaterPage = () => {
               <motion.div
                 className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary/40 to-primary/20"
                 animate={{ height: `${pct * 100}%` }}
-                transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+                transition={{ type: 'spring', stiffness: 60, damping: 8, mass: 1.2 }}
               />
               <motion.div
                 className="absolute left-0 right-0 h-3"
