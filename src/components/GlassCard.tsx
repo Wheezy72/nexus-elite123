@@ -33,7 +33,7 @@ const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', tilt = 
       onMouseMove={handleMouse}
       onMouseLeave={handleLeave}
       style={tilt ? { rotateX, rotateY, transformPerspective: 1000 } : {}}
-      className={`glass rounded-2xl overflow-hidden ${className}`}
+      className={`glass-card-premium rounded-2xl overflow-hidden ${className}`}
     >
       {children}
     </motion.div>
