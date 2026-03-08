@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Timer, ListTodo, Target, PenLine, Smile, Moon, BookOpen, Droplets, BarChart3, Zap, ArrowRight, Settings } from 'lucide-react';
-import PageLayout from '@/components/PageLayout';
+import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import DailyQuotes from '@/components/DailyQuotes';
 
@@ -18,15 +18,6 @@ const modules = [
   { to: '/settings', label: 'Settings', desc: 'Video bg, accent colors, preferences', icon: Settings, color: 'from-gray-500/20 to-zinc-500/20' },
 ];
 
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.15 } },
-};
-const item = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 25 } },
-};
-
 const Index = () => (
   <PageLayout>
     {/* Hero */}
@@ -37,15 +28,15 @@ const Index = () => (
         transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.15)]">
-          <Zap className="w-5 h-5 text-primary" />
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/20 flex items-center justify-center glow-primary">
+          <Zap className="w-6 h-6 text-primary" />
         </div>
       </motion.div>
       <motion.h1
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-2"
+        className="text-3xl sm:text-4xl font-bold text-foreground mb-2"
       >
         Nexus <span className="shimmer-text">Elite</span>
       </motion.h1>
@@ -61,17 +52,17 @@ const Index = () => (
 
     {/* Module Grid */}
     <motion.div
-      variants={container}
+      variants={staggerContainer}
       initial="hidden"
       animate="show"
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
     >
       {modules.map(mod => (
-        <motion.div key={mod.to} variants={item}>
+        <motion.div key={mod.to} variants={staggerItem}>
           <Link to={mod.to}>
             <GlassCard className="p-5 group transition-all duration-300">
               <div className="flex items-start justify-between">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${mod.color} flex items-center justify-center mb-3`}>
+                <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${mod.color} flex items-center justify-center mb-3`}>
                   <mod.icon className="w-5 h-5 text-foreground" />
                 </div>
                 <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
@@ -85,7 +76,9 @@ const Index = () => (
     </motion.div>
 
     {/* Daily Quote */}
-    <DailyQuotes />
+    <motion.div variants={staggerItem} initial="hidden" animate="show">
+      <DailyQuotes />
+    </motion.div>
   </PageLayout>
 );
 

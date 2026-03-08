@@ -98,7 +98,7 @@ const Navbar: React.FC = () => {
               className="fixed top-14 left-0 right-0 z-40 max-h-[calc(100vh-3.5rem)] overflow-y-auto"
             >
               <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-                <div className="glass rounded-2xl p-3 border border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+                <div className="glass rounded-3xl p-3 border border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1">
                     {navItems.map((item, i) => {
                       const isActive = location.pathname === item.to;

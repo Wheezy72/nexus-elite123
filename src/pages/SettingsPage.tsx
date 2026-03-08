@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import PageLayout from '@/components/PageLayout';
+import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 
 const accentColors = [
@@ -12,15 +12,6 @@ const accentColors = [
   { name: 'Rose', hsl: '350 70% 55%', preview: 'bg-rose-500' },
   { name: 'Emerald', hsl: '160 70% 45%', preview: 'bg-emerald-500' },
 ];
-
-const stagger = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-const fadeUp = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0 },
-};
 
 const SettingsPage: React.FC = () => {
   const [videoBg, setVideoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
@@ -58,7 +49,6 @@ const SettingsPage: React.FC = () => {
     window.location.reload();
   };
 
-  // Apply saved accent on mount
   React.useEffect(() => {
     if (accentColor !== '226 70% 55.5%') {
       document.documentElement.style.setProperty('--primary', accentColor);
@@ -66,7 +56,6 @@ const SettingsPage: React.FC = () => {
     }
   }, [accentColor]);
 
-  // Apply overlay preferences globally
   React.useEffect(() => {
     document.documentElement.setAttribute('data-noise', showNoise ? '1' : '0');
     document.documentElement.setAttribute('data-grid', showGrid ? '1' : '0');
@@ -75,18 +64,12 @@ const SettingsPage: React.FC = () => {
 
   return (
     <PageLayout>
-      <motion.h1
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-2xl font-bold text-foreground mb-6"
-      >
-        Settings
-      </motion.h1>
+      <motion.h1 variants={staggerItem} initial="hidden" animate="show" className="text-2xl font-bold text-foreground mb-6">Settings</motion.h1>
 
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4 max-w-2xl">
+      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-4 max-w-2xl">
 
         {/* Video Background */}
-        <motion.div variants={fadeUp}>
+        <motion.div variants={staggerItem}>
           <GlassCard className="p-5" tilt={false}>
             <div className="flex items-center gap-2 mb-4">
               <Video className="w-4 h-4 text-primary" />
@@ -94,20 +77,20 @@ const SettingsPage: React.FC = () => {
             </div>
             <div className="space-y-3">
               {videoBg ? (
-                <div className="relative rounded-lg overflow-hidden h-32 glass">
+                <div className="relative rounded-2xl overflow-hidden h-32 glass">
                   <video src={videoBg} className="w-full h-full object-cover opacity-60" autoPlay muted loop playsInline />
                   <div className="absolute inset-0 flex items-center justify-center gap-2">
                     <motion.button
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setVideoEnabled(!videoEnabled)}
-                      className="p-2 rounded-lg glass text-foreground"
+                      className="p-2 rounded-xl glass text-foreground"
                     >
                       {videoEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.9 }}
                       onClick={() => { setVideoBg(null); setVideoEnabled(false); }}
-                      className="p-2 rounded-lg glass text-destructive"
+                      className="p-2 rounded-xl glass text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
                     </motion.button>
@@ -117,7 +100,7 @@ const SettingsPage: React.FC = () => {
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={() => fileRef.current?.click()}
-                  className="w-full py-8 rounded-xl border border-dashed border-white/10 flex flex-col items-center gap-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+                  className="w-full py-8 rounded-2xl border border-dashed border-white/10 flex flex-col items-center gap-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
                 >
                   <Upload className="w-5 h-5" />
                   <span className="text-xs">Upload video (MP4)</span>
@@ -143,7 +126,7 @@ const SettingsPage: React.FC = () => {
         </motion.div>
 
         {/* Accent Color */}
-        <motion.div variants={fadeUp}>
+        <motion.div variants={staggerItem}>
           <GlassCard className="p-5" tilt={false}>
             <div className="flex items-center gap-2 mb-4">
               <Palette className="w-4 h-4 text-primary" />
@@ -158,9 +141,9 @@ const SettingsPage: React.FC = () => {
                   onClick={() => applyAccent(c.hsl)}
                   className="flex flex-col items-center gap-1.5"
                 >
-                  <div className={`w-10 h-10 rounded-xl ${c.preview} transition-all ${
+                  <div className={`w-10 h-10 rounded-2xl ${c.preview} transition-all ${
                     accentColor === c.hsl
-                      ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+                      ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background glow-primary'
                       : 'opacity-60 hover:opacity-100'
                   }`} />
                   <span className="text-[10px] text-muted-foreground">{c.name}</span>
@@ -171,7 +154,7 @@ const SettingsPage: React.FC = () => {
         </motion.div>
 
         {/* Visual Preferences */}
-        <motion.div variants={fadeUp}>
+        <motion.div variants={staggerItem}>
           <GlassCard className="p-5" tilt={false}>
             <div className="flex items-center gap-2 mb-4">
               <Layers className="w-4 h-4 text-primary" />
@@ -210,7 +193,7 @@ const SettingsPage: React.FC = () => {
         </motion.div>
 
         {/* Danger Zone */}
-        <motion.div variants={fadeUp}>
+        <motion.div variants={staggerItem}>
           <GlassCard className="p-5" tilt={false}>
             <div className="flex items-center gap-2 mb-4">
               <RotateCcw className="w-4 h-4 text-destructive" />
@@ -222,7 +205,7 @@ const SettingsPage: React.FC = () => {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={resetAll}
-              className="px-4 py-2 rounded-lg border border-destructive/30 text-destructive text-xs font-medium hover:bg-destructive/10 transition-colors"
+              className="px-4 py-2 rounded-xl border border-destructive/30 text-destructive text-xs font-medium hover:bg-destructive/10 transition-colors"
             >
               Reset All Data
             </motion.button>

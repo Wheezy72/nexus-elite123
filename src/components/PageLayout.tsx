@@ -8,6 +8,25 @@ interface PageLayoutProps {
   children: React.ReactNode;
 }
 
+export const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.07, delayChildren: 0.1 },
+  },
+};
+
+export const staggerItem = {
+  hidden: { opacity: 0, y: 24, scale: 0.97, filter: 'blur(4px)' },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: 'blur(0px)',
+    transition: { type: 'spring' as const, stiffness: 260, damping: 24 },
+  },
+};
+
 const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
   const [videoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
   const [videoEnabled] = useLocalStorage<boolean>('nexus-video-enabled', true);

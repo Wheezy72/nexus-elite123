@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import PageLayout from '@/components/PageLayout';
+import { motion } from 'framer-motion';
+import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import FlowEngine from '@/components/FlowEngine';
 import AmbientScenes from '@/components/AmbientScenes';
 import PulseBreather from '@/components/PulseBreather';
@@ -19,17 +20,17 @@ const FlowPage = () => {
 
   return (
     <PageLayout>
-      <h1 className="text-2xl font-bold text-foreground mb-6">Flow Engine</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="space-y-4">
+      <motion.h1 variants={staggerItem} initial="hidden" animate="show" className="text-2xl font-bold text-foreground mb-6">Flow Engine</motion.h1>
+      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <motion.div variants={staggerItem} className="space-y-4">
           <FlowEngine />
           <PulseBreather />
-        </div>
-        <div className="space-y-4">
+        </motion.div>
+        <motion.div variants={staggerItem} className="space-y-4">
           <AmbientScenes onApplyScene={handleApplyScene} />
           <FocusStats />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </PageLayout>
   );
 };
