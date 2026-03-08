@@ -4,6 +4,7 @@ import { Target, Plus, X, RotateCcw, ChevronUp, Minus, Award } from 'lucide-reac
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
+import { rewardAction } from '@/lib/rewards';
 
 interface Goal {
   id: string;
