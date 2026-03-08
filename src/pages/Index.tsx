@@ -8,20 +8,21 @@ import AmbientScenes from '@/components/AmbientScenes';
 import BrainDump from '@/components/BrainDump';
 import PulseBreather from '@/components/PulseBreather';
 import VisionShimmer from '@/components/VisionShimmer';
+import TaskBoard from '@/components/TaskBoard';
+import GoalTracker from '@/components/GoalTracker';
+import DailyQuotes from '@/components/DailyQuotes';
+import SleepTracker from '@/components/SleepTracker';
 import { startAudio, stopAudio, getIsPlaying, type NoiseType } from '@/lib/audioEngine';
 import { Zap } from 'lucide-react';
 
 const Index = () => {
   const handleApplyScene = useCallback((volumes: Record<NoiseType, number>, tone: number) => {
-    // Save to localStorage so FlowEngine picks up the values
     localStorage.setItem('nexus-noise-vols', JSON.stringify(volumes));
     localStorage.setItem('nexus-tone', JSON.stringify(tone));
-    // Restart audio with new config if already playing
     if (getIsPlaying()) {
       stopAudio();
       startAudio({ noiseVolumes: volumes, tone, customAudioUrl: null, customVolume: 50 });
     }
-    // Trigger storage event for other components to react
     window.dispatchEvent(new Event('storage'));
   }, []);
 
@@ -53,6 +54,16 @@ const Index = () => {
             <MicroLogger />
           </div>
 
+          {/* Daily Quote */}
+          <div>
+            <DailyQuotes />
+          </div>
+
+          {/* Task Board - wide */}
+          <div className="lg:col-span-2">
+            <TaskBoard />
+          </div>
+
           {/* Ambient Scenes */}
           <div>
             <AmbientScenes onApplyScene={handleApplyScene} />
@@ -63,9 +74,9 @@ const Index = () => {
             <HabitTracker />
           </div>
 
-          {/* Pulse Breather */}
+          {/* Goal Tracker */}
           <div>
-            <PulseBreather />
+            <GoalTracker />
           </div>
 
           {/* Brain Dump */}
@@ -76,6 +87,16 @@ const Index = () => {
           {/* Feynman Card */}
           <div>
             <FeynmanCard />
+          </div>
+
+          {/* Pulse Breather */}
+          <div>
+            <PulseBreather />
+          </div>
+
+          {/* Sleep Tracker */}
+          <div>
+            <SleepTracker />
           </div>
 
           {/* Focus Stats - wide */}
