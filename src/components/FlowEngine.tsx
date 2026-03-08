@@ -1,37 +1,85 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Volume2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Upload, X, CloudRain, Wind, Trees, Radio } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { startAudio, stopAudio, updateAudio, getIsPlaying } from '@/lib/audioEngine';
+import { startAudio, stopAudio, updateAudio, pauseAudio, resumeAudio, getIsPlaying, type AudioConfig, type NoiseType } from '@/lib/audioEngine';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 
 interface FlowSession {
   id: string;
   startedAt: string;
-  duration: number; // seconds completed
+  duration: number;
   type: 'focus' | 'break';
 }
 
-const FOCUS_TIME = 25 * 60;
-const BREAK_TIME = 5 * 60;
+const PRESETS = [
+  { label: '15 min', focus: 15, break: 3 },
+  { label: '25 min', focus: 25, break: 5 },
+  { label: '45 min', focus: 45, break: 10 },
+  { label: '60 min', focus: 60, break: 15 },
+];
+
+const noiseChannels: { key: NoiseType; label: string; icon: React.ElementType }[] = [
+  { key: 'brown', label: 'Brown', icon: Radio },
+  { key: 'white', label: 'White', icon: Wind },
+  { key: 'green', label: 'Green', icon: Trees },
+  { key: 'rain', label: 'Rain', icon: CloudRain },
+];
 
 const FlowEngine: React.FC = () => {
   const [sessions, setSessions] = useLocalStorage<FlowSession[]>('nexus-flow-sessions', []);
-  const [timeLeft, setTimeLeft] = useState(FOCUS_TIME);
+  const [focusMin, setFocusMin] = useLocalStorage<number>('nexus-focus-min', 25);
+  const [breakMin, setBreakMin] = useLocalStorage<number>('nexus-break-min', 5);
+
+  const [timeLeft, setTimeLeft] = useState(focusMin * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [isFocus, setIsFocus] = useState(true);
-  const [density, setDensity] = useState(50);
-  const [tone, setTone] = useState(50);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAudio, setShowAudio] = useState(false);
+
+  // Audio config
+  const [noiseVolumes, setNoiseVolumes] = useLocalStorage<Record<NoiseType, number>>('nexus-noise-vols', {
+    brown: 50, white: 0, green: 0, rain: 40,
+  });
+  const [tone, setTone] = useLocalStorage<number>('nexus-tone', 50);
+  const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
+  const [customAudioName, setCustomAudioName] = useState<string | null>(null);
+  const [customVolume, setCustomVolume] = useLocalStorage<number>('nexus-custom-vol', 50);
   const [audioOn, setAudioOn] = useState(false);
+
   const intervalRef = useRef<number | null>(null);
   const sessionStart = useRef<number>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const totalTime = isFocus ? FOCUS_TIME : BREAK_TIME;
+  const totalTime = (isFocus ? focusMin : breakMin) * 60;
   const progress = 1 - timeLeft / totalTime;
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
   const strokeOffset = circumference * (1 - progress);
+
+  const getAudioConfig = useCallback((): AudioConfig => ({
+    noiseVolumes,
+    tone,
+    customAudioUrl,
+    customVolume,
+  }), [noiseVolumes, tone, customAudioUrl, customVolume]);
+
+  // Sync audio when config changes
+  useEffect(() => {
+    if (audioOn && getIsPlaying()) updateAudio(getAudioConfig());
+  }, [noiseVolumes, tone, customVolume, audioOn, getAudioConfig]);
+
+  // Pause/resume audio with timer
+  useEffect(() => {
+    if (!audioOn) return;
+    if (isRunning) {
+      if (getIsPlaying()) resumeAudio();
+      else startAudio(getAudioConfig());
+    } else {
+      pauseAudio();
+    }
+  }, [isRunning, audioOn, getAudioConfig]);
 
   const startTimer = useCallback(() => {
     setIsRunning(true);
@@ -44,8 +92,15 @@ const FlowEngine: React.FC = () => {
 
   const resetTimer = useCallback(() => {
     setIsRunning(false);
-    setTimeLeft(isFocus ? FOCUS_TIME : BREAK_TIME);
-  }, [isFocus]);
+    setTimeLeft((isFocus ? focusMin : breakMin) * 60);
+  }, [isFocus, focusMin, breakMin]);
+
+  // Apply preset / settings change to timer when not running
+  useEffect(() => {
+    if (!isRunning) {
+      setTimeLeft((isFocus ? focusMin : breakMin) * 60);
+    }
+  }, [focusMin, breakMin, isFocus, isRunning]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -63,43 +118,137 @@ const FlowEngine: React.FC = () => {
             type: isFocus ? 'focus' : 'break',
           }]);
           setIsRunning(false);
-          const next = !isFocus;
-          setIsFocus(!isFocus);
-          return next ? FOCUS_TIME : BREAK_TIME;
+          const nextIsFocus = !isFocus;
+          setIsFocus(nextIsFocus);
+          return (nextIsFocus ? focusMin : breakMin) * 60;
         }
         return prev - 1;
       });
     }, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isRunning, isFocus, setSessions]);
+  }, [isRunning, isFocus, setSessions, focusMin, breakMin]);
 
   const toggleAudio = () => {
-    if (audioOn) { stopAudio(); setAudioOn(false); }
-    else { startAudio(density, tone); setAudioOn(true); }
+    if (audioOn) {
+      stopAudio();
+      setAudioOn(false);
+    } else {
+      startAudio(getAudioConfig());
+      setAudioOn(true);
+      if (!isRunning) pauseAudio(); // start paused if timer not running
+    }
   };
 
-  useEffect(() => {
-    if (audioOn) updateAudio(density, tone);
-  }, [density, tone, audioOn]);
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+    const url = URL.createObjectURL(file);
+    setCustomAudioUrl(url);
+    setCustomAudioName(file.name);
+    // Restart audio if playing
+    if (audioOn) {
+      stopAudio();
+      setTimeout(() => startAudio({ ...getAudioConfig(), customAudioUrl: url }), 100);
+    }
+  };
 
-  useEffect(() => () => { if (getIsPlaying()) stopAudio(); }, []);
+  const removeCustomAudio = () => {
+    if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+    setCustomAudioUrl(null);
+    setCustomAudioName(null);
+    if (audioOn) {
+      stopAudio();
+      startAudio({ ...getAudioConfig(), customAudioUrl: null });
+    }
+  };
+
+  useEffect(() => () => {
+    if (getIsPlaying()) stopAudio();
+    if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+  }, []);
 
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
 
+  const setNoiseVol = (key: NoiseType, val: number) => {
+    setNoiseVolumes(prev => ({ ...prev, [key]: val }));
+  };
+
   return (
-    <GlassCard className="p-6 flex flex-col items-center gap-5 relative">
-      {/* Breathing gradient overlay */}
+    <GlassCard className="p-6 flex flex-col items-center gap-4 relative">
       {isRunning && (
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 to-transparent breathing-active pointer-events-none" />
       )}
 
-      <div className="flex items-center gap-2 w-full">
-        <h2 className="text-lg font-bold text-foreground tracking-tight">Flow Engine</h2>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isFocus ? 'bg-primary/20 text-primary' : 'bg-accent text-accent-foreground'}`}>
-          {isFocus ? 'Focus' : 'Break'}
-        </span>
+      {/* Header */}
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-foreground tracking-tight">Flow Engine</h2>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${isFocus ? 'bg-primary/20 text-primary' : 'bg-accent text-accent-foreground'}`}>
+            {isFocus ? 'Focus' : 'Break'}
+          </span>
+        </div>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setShowSettings(!showSettings)}
+          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${showSettings ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          <Settings className="w-4 h-4" />
+        </motion.button>
       </div>
+
+      {/* Settings panel */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="w-full overflow-hidden"
+          >
+            <div className="glass rounded-xl p-4 space-y-3">
+              <p className="text-xs font-medium text-foreground">Timer Presets</p>
+              <div className="grid grid-cols-4 gap-2">
+                {PRESETS.map(p => (
+                  <motion.button
+                    key={p.label}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => { setFocusMin(p.focus); setBreakMin(p.break); }}
+                    className={`text-xs py-2 rounded-lg transition-colors ${focusMin === p.focus ? 'bg-primary/20 text-primary font-semibold' : 'glass text-muted-foreground hover:text-foreground'}`}
+                  >
+                    {p.label}
+                  </motion.button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">Focus (min)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={focusMin}
+                    onChange={e => setFocusMin(Math.max(1, Math.min(120, Number(e.target.value))))}
+                    className="w-full glass rounded-lg px-3 py-1.5 text-sm text-foreground bg-transparent outline-none tabular-nums"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">Break (min)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={breakMin}
+                    onChange={e => setBreakMin(Math.max(1, Math.min(30, Number(e.target.value))))}
+                    className="w-full glass rounded-lg px-3 py-1.5 text-sm text-foreground bg-transparent outline-none tabular-nums"
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Circular SVG timer */}
       <div className="relative w-[200px] h-[200px]">
@@ -107,7 +256,7 @@ const FlowEngine: React.FC = () => {
           <circle cx="100" cy="100" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
           <motion.circle
             cx="100" cy="100" r={radius} fill="none"
-            stroke="hsl(226, 70%, 55.5%)"
+            stroke="hsl(var(--primary))"
             strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -119,7 +268,7 @@ const FlowEngine: React.FC = () => {
           <span className="text-4xl font-bold tabular-nums text-foreground">
             {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
           </span>
-          <span className="text-xs text-muted-foreground mt-1">
+          <span className="text-[11px] text-muted-foreground mt-1">
             {sessions.filter(s => s.type === 'focus').length} sessions today
           </span>
         </div>
@@ -148,29 +297,97 @@ const FlowEngine: React.FC = () => {
           onClick={toggleAudio}
           className={`w-12 h-12 rounded-full glass flex items-center justify-center transition-colors ${audioOn ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
         >
-          <Volume2 className="w-5 h-5" />
+          {audioOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
         </motion.button>
       </div>
 
-      {/* Audio sliders */}
-      {audioOn && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="w-full space-y-3"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Rain Density</span>
-            <span className="text-xs tabular-nums text-foreground">{density}%</span>
-          </div>
-          <Slider value={[density]} onValueChange={([v]) => setDensity(v)} min={0} max={100} step={1} />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Tone</span>
-            <span className="text-xs tabular-nums text-foreground">{tone}%</span>
-          </div>
-          <Slider value={[tone]} onValueChange={([v]) => setTone(v)} min={0} max={100} step={1} />
-        </motion.div>
-      )}
+      {/* Audio mixer */}
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowAudio(!showAudio)}
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {showAudio ? 'Hide Mixer' : 'Sound Mixer ↓'}
+      </motion.button>
+
+      <AnimatePresence>
+        {showAudio && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="w-full overflow-hidden"
+          >
+            <div className="space-y-3">
+              {/* Noise channels */}
+              {noiseChannels.map(ch => (
+                <div key={ch.key} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <ch.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{ch.label}</span>
+                    </div>
+                    <span className="text-[10px] tabular-nums text-foreground">{noiseVolumes[ch.key]}%</span>
+                  </div>
+                  <Slider
+                    value={[noiseVolumes[ch.key]]}
+                    onValueChange={([v]) => setNoiseVol(ch.key, v)}
+                    min={0} max={100} step={1}
+                  />
+                </div>
+              ))}
+
+              {/* Tone */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Tone Filter</span>
+                  <span className="text-[10px] tabular-nums text-foreground">{tone}%</span>
+                </div>
+                <Slider value={[tone]} onValueChange={([v]) => setTone(v)} min={0} max={100} step={1} />
+              </div>
+
+              {/* Custom audio upload */}
+              <div className="glass rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-foreground">Your Audio</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-[10px] px-2.5 py-1 rounded-lg bg-primary/20 text-primary flex items-center gap-1"
+                  >
+                    <Upload className="w-3 h-3" /> Upload
+                  </motion.button>
+                </div>
+                {customAudioName ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground truncate max-w-[140px]">{customAudioName}</span>
+                    <div className="flex items-center gap-2">
+                      <Slider
+                        value={[customVolume]}
+                        onValueChange={([v]) => setCustomVolume(v)}
+                        min={0} max={100} step={1}
+                        className="w-16"
+                      />
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={removeCustomAudio}>
+                        <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+                      </motion.button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">Upload an MP3 or WAV to layer with the noise</p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </GlassCard>
   );
 };
