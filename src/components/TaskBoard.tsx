@@ -73,6 +73,7 @@ const TaskBoard: React.FC = () => {
     setNewText('');
     setNewDueDate('');
     setShowAdd(false);
+    rewardAction('task_create');
   };
 
   const moveTask = (id: string, to: Task['column']) => {
