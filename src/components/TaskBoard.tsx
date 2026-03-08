@@ -124,7 +124,9 @@ const TaskBoard: React.FC = () => {
     return null;
   };
 
-  const filteredTasks = tasks
+  const safeTasks = tasks.map(t => ({ ...t, subtasks: t.subtasks || [] }));
+
+  const filteredTasks = safeTasks
     .filter(t => filter === 'all' || t.priority === filter)
     .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 
