@@ -123,21 +123,27 @@ const Navbar: React.FC = () => {
                         className="absolute right-0 top-full mt-2 z-50 w-[360px] glass rounded-2xl p-2 border border-white/[0.08] shadow-[0_12px_35px_rgba(0,0,0,0.35)]"
                       >
                         <div className="grid grid-cols-3 gap-1">
-                          {desktopMore.map(item => {
+                          {desktopMore.map((item, i) => {
                             const isActive = location.pathname === item.to;
                             return (
-                              <NavLink
+                              <motion.div
                                 key={item.to}
-                                to={item.to}
-                                className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-colors ${
-                                  isActive
-                                    ? 'bg-primary/15 text-primary'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
-                                }`}
+                                initial={{ opacity: 0, y: -12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.04, duration: 0.2 }}
                               >
-                                <item.icon className="w-4 h-4" />
-                                <span className="text-[10px] font-medium">{item.label}</span>
-                              </NavLink>
+                                <NavLink
+                                  to={item.to}
+                                  className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-colors ${
+                                    isActive
+                                      ? 'bg-primary/15 text-primary'
+                                      : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
+                                  }`}
+                                >
+                                  <item.icon className="w-4 h-4" />
+                                  <span className="text-[10px] font-medium">{item.label}</span>
+                                </NavLink>
+                              </motion.div>
                             );
                           })}
                         </div>
@@ -212,21 +218,27 @@ const Navbar: React.FC = () => {
             >
               <div className="mx-3 mb-2 glass rounded-2xl p-3 border border-white/[0.08] shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
                 <div className="grid grid-cols-4 gap-1">
-                  {mobileMore.map(item => {
+                  {mobileMore.map((item, i) => {
                     const isActive = location.pathname === item.to;
                     return (
-                      <NavLink
+                      <motion.div
                         key={item.to}
-                        to={item.to}
-                        className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-colors ${
-                          isActive
-                            ? 'bg-primary/15 text-primary'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
-                        }`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.035, duration: 0.2 }}
                       >
-                        <item.icon className="w-5 h-5" />
-                        <span className="text-[10px] font-medium">{item.label}</span>
-                      </NavLink>
+                        <NavLink
+                          to={item.to}
+                          className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-colors ${
+                            isActive
+                              ? 'bg-primary/15 text-primary'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          <item.icon className="w-5 h-5" />
+                          <span className="text-[10px] font-medium">{item.label}</span>
+                        </NavLink>
+                      </motion.div>
                     );
                   })}
                 </div>
