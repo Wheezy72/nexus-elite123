@@ -89,7 +89,7 @@ const ProfilePage: React.FC = () => {
             <input
               type="text"
               value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
+              onChange={e => setDisplayName(e.target.value.slice(0, 50))}
               className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-primary/40 transition-colors mb-4"
             />
 

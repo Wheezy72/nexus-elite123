@@ -53,7 +53,7 @@ const ResetPasswordPage: React.FC = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
               />
             </div>
