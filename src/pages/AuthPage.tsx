@@ -102,7 +102,7 @@ const AuthPage: React.FC = () => {
           </p>
 
           {/* Google Sign In */}
-          {mode !== 'forgot' && (
+          {mode !== 'forgot' && googleAvailable && (
             <>
               <motion.button
                 whileTap={{ scale: 0.98 }}
