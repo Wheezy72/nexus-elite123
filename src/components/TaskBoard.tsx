@@ -335,28 +335,26 @@ const TaskBoard: React.FC = () => {
                                           ))}
                                         </div>
                                       )}
-                                      {task.column !== 'done' && (
-                                        <div className="flex items-center gap-1 mt-1.5">
-                                          <input
-                                            value={subtaskInputs[task.id] || ''}
-                                            onChange={e => setSubtaskInputs(p => ({ ...p, [task.id]: e.target.value }))}
-                                            onKeyDown={e => e.key === 'Enter' && addSubtask(task.id)}
-                                            placeholder="+ subtask"
-                                            className="flex-1 text-[10px] bg-transparent outline-none text-muted-foreground placeholder:text-muted-foreground/30"
-                                          />
-                                          {subtaskInputs[task.id]?.trim() && (
-                                            <motion.button
-                                              initial={{ scale: 0 }}
-                                              animate={{ scale: 1 }}
-                                              whileTap={{ scale: 0.8 }}
-                                              onClick={() => addSubtask(task.id)}
-                                              className="text-primary"
-                                            >
-                                              <Plus className="w-3 h-3" />
-                                            </motion.button>
-                                          )}
-                                        </div>
-                                      )}
+                                      <div className="flex items-center gap-1 mt-1.5">
+                                        <input
+                                          value={subtaskInputs[task.id] || ''}
+                                          onChange={e => setSubtaskInputs(p => ({ ...p, [task.id]: e.target.value }))}
+                                          onKeyDown={e => e.key === 'Enter' && addSubtask(task.id)}
+                                          placeholder="+ subtask"
+                                          className="flex-1 text-[10px] bg-transparent outline-none text-muted-foreground placeholder:text-muted-foreground/30"
+                                        />
+                                        {subtaskInputs[task.id]?.trim() && (
+                                          <motion.button
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            whileTap={{ scale: 0.8 }}
+                                            onClick={() => addSubtask(task.id)}
+                                            className="text-primary"
+                                          >
+                                            <Plus className="w-3 h-3" />
+                                          </motion.button>
+                                        )}
+                                      </div>
                                     </motion.div>
                                   )}
                                 </AnimatePresence>
