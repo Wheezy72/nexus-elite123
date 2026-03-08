@@ -1,6 +1,6 @@
 # Self-Hosting Guide — Nexus Elite
 
-This guide walks you through fully self-hosting Nexus Elite with your own Supabase project (free tier works).
+Run Nexus Elite on your own machine and access it from your phone on the same Wi-Fi network.
 
 ---
 
@@ -15,24 +15,62 @@ This guide walks you through fully self-hosting Nexus Elite with your own Supaba
 
 ## Step 2: Create the Database Tables
 
-1. In your Supabase dashboard, go to **SQL Editor**
-2. Paste and run the contents of each file in `supabase/migrations/` (in order)
-   - This creates all tables (profiles, tasks, habits, journal, mood, sleep, water, notes, goals, reminders) with RLS policies
+In your Supabase dashboard, go to **SQL Editor** and paste/run the contents of each file in `supabase/migrations/` (in order).
 
-Or run them via CLI:
+Or use the CLI:
 ```bash
-# Install Supabase CLI
 npm install -g supabase
-supabase init
 supabase link --project-ref YOUR_PROJECT_ID
 supabase db push
 ```
 
 ## Step 3: Enable Authentication
 
-1. In Supabase dashboard → **Authentication → Providers**
-2. Enable **Email** (already on by default)
-3. For Google sign-in: Enable **Google** provider and add your OAuth credentials
+### Email/Password (default — already enabled)
+
+No extra setup needed.
+
+### Google Sign-In (optional)
+
+1. **Google Cloud Console** → [console.cloud.google.com](https://console.cloud.google.com)
+2. Create a new project (or use existing)
+3. Go to **APIs & Services → OAuth consent screen**
+   - Choose **External** user type
+   - Fill in app name, support email
+   - Add scopes: `email`, `profile`, `openid`
+   - Add your email as a test user (while in testing mode)
+4. Go to **APIs & Services → Credentials**
+   - Click **Create Credentials → OAuth Client ID**
+   - Application type: **Web application**
+   - **Authorized redirect URIs**: add your Supabase callback URL:
+     ```
+     https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback
+     ```
+   - Copy the **Client ID** and **Client Secret**
+5. **Supabase Dashboard → Authentication → Providers → Google**
+   - Toggle Google **ON**
+   - Paste your Client ID and Client Secret
+   - Save
+
+### Update the Code for Self-Hosted Google Auth
+
+The app uses Lovable's managed OAuth by default. For self-hosting, update `src/pages/AuthPage.tsx`:
+
+Replace the `handleGoogle` function:
+```typescript
+// BEFORE (Lovable managed — won't work self-hosted):
+import { lovable } from '@/integrations/lovable/index';
+const result = await lovable.auth.signInWithOAuth('google', { ... });
+
+// AFTER (standard Supabase — works self-hosted):
+import { supabase } from '@/integrations/supabase/client';
+const { error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: { redirectTo: window.location.origin },
+});
+```
+
+Or simply remove the Google button if you only want email/password.
 
 ## Step 4: Configure Environment
 
@@ -46,34 +84,58 @@ VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
 
 ---
 
-## Option A: Run Locally
+## Running with Docker (Localhost + Phone)
+
+### Quick Start
 
 ```bash
-npm install
-npm run dev
-# Open http://localhost:8080
-```
+# 1. Clone the repo
+git clone <your-repo-url>
+cd <project-folder>
 
-## Option B: Build & Serve Static Files
+# 2. Create your .env file (see Step 4 above)
 
-```bash
-npm run build
-npx serve dist
-# Or use any static server
-```
-
-## Option C: Docker (Recommended for VPS)
-
-```bash
-# Create .env with your Supabase credentials (see Step 4)
-
-# Build and run with Docker Compose:
+# 3. Build and run
 docker-compose up -d --build
 
-# Your app is now at http://your-server-ip
+# 4. Open in browser
+# http://localhost
 ```
 
-Or build manually:
+### Access from Your Android Phone
+
+Your phone and computer must be on the **same Wi-Fi network**.
+
+1. Find your computer's local IP:
+   - **Windows**: `ipconfig` → look for IPv4 (e.g., `192.168.1.100`)
+   - **Mac**: `ifconfig | grep "inet "` or System Settings → Wi-Fi → Details
+   - **Linux**: `hostname -I`
+
+2. On your phone, open Chrome and go to:
+   ```
+   http://192.168.1.100
+   ```
+   (replace with your actual IP)
+
+3. **Install as PWA**: Chrome menu (⋮) → "Add to Home Screen" or "Install app"
+
+It'll appear as a full-screen app on your home screen! 🎉
+
+### Stop / Restart
+
+```bash
+# Stop
+docker-compose down
+
+# Restart (after code changes)
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+```
+
+### Or Build Manually (without Docker Compose)
+
 ```bash
 docker build \
   --build-arg VITE_SUPABASE_URL=https://YOUR_ID.supabase.co \
@@ -81,37 +143,15 @@ docker build \
   --build-arg VITE_SUPABASE_PROJECT_ID=YOUR_ID \
   -t nexus-elite .
 
-docker run -d -p 80:80 nexus-elite
+docker run -d -p 80:80 --name nexus-elite nexus-elite
 ```
-
----
-
-## Option D: Free Hosting (No Server Needed)
-
-| Platform | How |
-|----------|-----|
-| **Vercel** | Connect GitHub repo → auto-deploys. Add env vars in dashboard. |
-| **Netlify** | Same as Vercel. Drag-drop `dist/` or connect repo. |
-| **Cloudflare Pages** | Connect repo → builds automatically. Free tier is generous. |
-| **Railway** | Use the Dockerfile. Free tier available. |
-
----
-
-## Accessing on Your Phone
-
-Once deployed (any method above), visit the URL on your phone:
-- **Android**: Browser menu → "Install app"
-- **iPhone**: Share → "Add to Home Screen"
-
-The PWA will install as a full-screen native-feeling app.
 
 ---
 
 ## Cost Breakdown
 
-| Component | Free Tier |
-|-----------|-----------|
-| Supabase | 500MB DB, 1GB storage, 50k auth users |
-| Vercel/Netlify | 100GB bandwidth/month |
-| Cloudflare Pages | Unlimited bandwidth |
-| **Total** | **$0/month** for personal use |
+| Component | Cost |
+|-----------|------|
+| Supabase (free tier) | $0 — 500MB DB, 50k auth users |
+| Docker on your PC | $0 |
+| **Total** | **$0/month** |
