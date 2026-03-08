@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Droplets, Plus, Minus, RotateCcw } from 'lucide-react';
+import { rewardAction } from '@/lib/rewards';
+import { haptic } from '@/lib/haptics';
 import PageLayout from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
