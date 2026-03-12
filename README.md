@@ -17,6 +17,7 @@ A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Su
 - ⏰ **Reminders** — Scheduled with repeat (once/daily/weekly)
 - ⏱️ **Flow Timer** — Pomodoro-style focus sessions
 - 📊 **Stats** — Pomodoro + focus analytics
+- 📵 **Nexus Focus (Android app)** — Notification listener + focus-mode blocking + distraction analytics (local-only)
 - 📈 **Analytics** — Wellness patterns, trends, correlations (mood/sleep/exercise/tasks)
 - 🎓 **Study Planner** — AI-generated study plans + one-click task creation
 - 💸 **Finance** — Monthly budget + expense tracker
@@ -63,6 +64,18 @@ npm run test
 npm run type-check
 npm run lint
 ```
+
+## Mobile (Android)
+
+A separate Expo + native module lives in `mobile/`.
+
+```bash
+cd mobile
+npm install
+npm run android
+```
+
+See `mobile/README.md` for permissions and notes.
 
 ## Self-hosting
 

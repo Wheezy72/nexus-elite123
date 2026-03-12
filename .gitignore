@@ -28,3 +28,9 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Mobile (Expo)
+mobile/node_modules
+mobile/.expo
+mobile/android
+mobile/ios
