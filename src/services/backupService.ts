@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { decryptString, encryptString, fromBase64, toBase64, type EncryptedPayload } from '@/lib/encryption';
+import { decryptString, encryptString, fromBase64, toBase64 } from '@/lib/encryption';
+import { packEncryptedContainer, unpackEncryptedContainer } from '@/lib/encryptedContainer';
 import { pinLockService } from '@/services/pinLockService';
 
 const BACKUP_BUCKET = 'nexus-backups';
@@ -85,20 +86,13 @@ export const backupService = {
     if (!key) throw new Error('Unlock with PIN to enable encrypted backups');
 
     const payload = await encryptString(JSON.stringify(backup), key);
-    const fileBytes = fromBase64(payload.ciphertextB64);
 
     const filename = `backup-${todayKey()}-${Date.now()}.json.enc`;
     const path = `${userId}/${filename}`;
 
-    const header = JSON.stringify({ alg: payload.alg, nonceB64: 'nonceB64' in payload ? payload.nonceB64 : undefined, ivB64: 'ivB64' in payload ? payload.ivB64 : undefined });
-    const headerBytes = new TextEncoder().encode(header);
+    const packed = packEncryptedContainer(payload);
 
-    // Store a small JSON header + raw ciphertext bytes, so we can keep upload as binary.
-    const container = new Blob([
-      new Uint8Array([headerBytes.length >> 8, headerBytes.length & 0xff]),
-      headerBytes,
-      fileBytes,
-    ], { type: 'application/octet-stream' });
+    const container = new Blob([packed], { type: 'application/octet-stream' });
 
     const { error } = await supabase.storage.from(BACKUP_BUCKET).upload(path, container, {
       upsert: true,
@@ -136,18 +130,9 @@ export const backupService = {
     if (error) throw error;
 
     const buf = new Uint8Array(await data.arrayBuffer());
-    if (buf.length < 2) throw new Error('Invalid backup');
 
-    const headerLen = (buf[0] << 8) | buf[1];
-    const headerStr = new TextDecoder().decode(buf.slice(2, 2 + headerLen));
-    const header = JSON.parse(headerStr) as { alg?: string; nonceB64?: string; ivB64?: string };
-    const ciphertext = buf.slice(2 + headerLen);
-
-    const payload: EncryptedPayload = header.alg === 'xchacha20-poly1305'
-      ? { alg: 'xchacha20-poly1305', nonceB64: String(header.nonceB64 || ''), ciphertextB64: toBase64(ciphertext) }
-      : { ivB64: String(header.ivB64 || ''), ciphertextB64: toBase64(ciphertext) };
-
-    const plaintext = await decryptString(payload, key);
+    const unpacked = unpackEncryptedContainer(buf);
+    const plaintext = await decryptString(unpacked.payload, key);
     return JSON.parse(plaintext) as EncryptedBackup;
   },
 

@@ -5,7 +5,8 @@ import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayo
 import GlassCard from '@/components/GlassCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { decryptBytes, encryptBytes, fromBase64, toBase64 } from '@/lib/encryption';
+import { decryptBytes, encryptBytes } from '@/lib/encryption';
+import { packEncryptedContainer, unpackEncryptedContainer } from '@/lib/encryptedContainer';
 import { pinLockService } from '@/services/pinLockService';
 import { toast } from 'sonner';
 
@@ -75,19 +76,12 @@ const ProfilePage: React.FC = () => {
         if (error) throw error;
 
         const buf = new Uint8Array(await data.arrayBuffer());
-        if (buf.length < 2) throw new Error('Invalid encrypted photo');
+        const unpacked = unpackEncryptedContainer(buf);
 
-        const headerLen = (buf[0] << 8) | buf[1];
-        const headerStr = new TextDecoder().decode(buf.slice(2, 2 + headerLen));
-        const header = JSON.parse(headerStr) as { contentType: string; nonceB64: string; alg: string };
-        const ciphertext = buf.slice(2 + headerLen);
+        const plaintext = await decryptBytes(unpacked.payload, key);
+        const contentType = typeof unpacked.header.contentType === 'string' ? unpacked.header.contentType : 'image/png';
 
-        const plaintext = await decryptBytes(
-          { alg: 'xchacha20-poly1305', nonceB64: header.nonceB64, ciphertextB64: toBase64(ciphertext) },
-          key
-        );
-
-        const url = URL.createObjectURL(new Blob([plaintext], { type: header.contentType || 'image/png' }));
+        const url = URL.createObjectURL(new Blob([plaintext], { type: contentType }));
         if (!cancelled) setPhotoUrl(url);
       } catch {
         if (!cancelled) setPhotoUrl(null);
@@ -134,21 +128,12 @@ const ProfilePage: React.FC = () => {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const payload = await encryptBytes(bytes, key);
-      if (!('nonceB64' in payload)) throw new Error('Unexpected encryption payload');
 
-      const headerStr = JSON.stringify({
-        alg: payload.alg,
-        nonceB64: payload.nonceB64,
+      const packed = packEncryptedContainer(payload, {
         contentType: file.type || 'image/png',
       });
-      const headerBytes = new TextEncoder().encode(headerStr);
-      const ciphertext = fromBase64(payload.ciphertextB64);
 
-      const container = new Blob([
-        new Uint8Array([headerBytes.length >> 8, headerBytes.length & 0xff]),
-        headerBytes,
-        ciphertext,
-      ], { type: 'application/octet-stream' });
+      const container = new Blob([packed], { type: 'application/octet-stream' });
 
       const path = `${user.id}/profile-photo.bin`;
       const { error: uploadError } = await supabase.storage.from('nexus-profile').upload(path, container, {
