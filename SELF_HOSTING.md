@@ -139,6 +139,24 @@ VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
 
 Replace the values with what you copied in Step 1.
 
+### (Optional) Enable real AI responses
+
+The AI gateway runs in **mock mode** by default. To use a real provider, add one of these to the same root `.env` file (Docker Compose reads it automatically):
+
+**OpenAI**
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+```
+
+**Gemini (Google AI Studio)**
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+```
+
 ---
 
 ## Step 5: Run with Docker

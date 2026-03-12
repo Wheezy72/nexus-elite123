@@ -18,4 +18,12 @@ services:
       context: ./backend
     ports:
       - "3001:3001"
+    environment:
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      PORT: ${BACKEND_PORT:-3001}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     restart: unless-stopped

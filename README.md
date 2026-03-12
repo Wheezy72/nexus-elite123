@@ -27,7 +27,7 @@ A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Lo
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18+ (or [Bun](https://bun.sh/))
+- [Node.js](https://nodejs.org/) v20+ (or [Bun](https://bun.sh/))
 - npm, yarn, or bun
 
 ### Getting Started
@@ -42,13 +42,15 @@ npm install
 # or: bun install
 
 # 3. Set up environment variables
-# Create a .env file in the project root:
-cat > .env << EOF
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
-EOF
+# Copy the example env files and fill in your keys (the real .env files are gitignored):
+cp .env.example .env
+cp backend/.env.example backend/.env
 
-# You can find these values in:
+# Then edit:
+#   - .env (Supabase URL + anon key)
+#   - backend/.env (optional: AI_PROVIDER + provider key)
+
+# You can find Supabase values in:
 #   Lovable → Cloud tab → Settings
 #   Or your Supabase project → Settings → API
 
