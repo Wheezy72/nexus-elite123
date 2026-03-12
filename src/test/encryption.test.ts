@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { decryptString, deriveAesKeyFromPin, encryptString } from '@/lib/encryption';
+import { decryptString, deriveKeyFromPin, encryptString } from '@/lib/encryption';
 
-describe('encryption', () => {
+describe('encryption (XChaCha20-Poly1305)', () => {
   it('round trips a plaintext string', async () => {
     const salt = crypto.getRandomValues(new Uint8Array(16));
-    const key = await deriveAesKeyFromPin('1234', salt);
+    const key = await deriveKeyFromPin('1234', salt);
 
     const payload = await encryptString('hello world', key);
     const decrypted = await decryptString(payload, key);

@@ -1,4 +1,4 @@
-export type AIProvider = "mock" | "openai" | "gemini";
+export type AIProvider = "mock" | "openai" | "gemini" | "anthropic";
 
 export interface AIChatResult {
   provider: AIProvider;
@@ -15,7 +15,7 @@ const DEFAULT_SYSTEM_INSTRUCTIONS =
 
 function getProvider(): AIProvider {
   const raw = String(process.env.AI_PROVIDER || "mock").toLowerCase();
-  if (raw === "openai" || raw === "gemini" || raw === "mock") return raw;
+  if (raw === "openai" || raw === "gemini" || raw === "anthropic" || raw === "mock") return raw;
   return "mock";
 }
 
@@ -125,9 +125,64 @@ async function chatGemini(message: string, context?: unknown): Promise<AIChatRes
   };
 }
 
+async function chatAnthropic(message: string, context?: unknown): Promise<AIChatResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing ANTHROPIC_API_KEY. Add it to backend/.env");
+  }
+
+  const model = process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest";
+  const prompt = buildUserPrompt(message, context);
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": process.env.ANTHROPIC_VERSION || "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 700,
+      system: DEFAULT_SYSTEM_INSTRUCTIONS,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Anthropic error: ${resp.status} ${text}`);
+  }
+
+  const data = (await resp.json()) as {
+    content?: Array<{ type?: string; text?: string }>;
+  };
+
+  const text = data.content?.find((c) => c.type === "text")?.text?.trim() || "";
+
+  return {
+    provider: "anthropic",
+    response: text,
+    citations: [],
+    followUp: null,
+  };
+}
+
 export async function chatWithAI(message: string, context?: unknown): Promise<AIChatResult> {
   const provider = getProvider();
-  if (provider === "openai") return chatOpenAI(message, context);
-  if (provider === "gemini") return chatGemini(message, context);
-  return chatMock(message, context);
+
+  try {
+    if (provider === "openai") return await chatOpenAI(message, context);
+    if (provider === "gemini") return await chatGemini(message, context);
+    if (provider === "anthropic") return await chatAnthropic(message, context);
+    return await chatMock(message, context);
+  } catch (err) {
+    const fallback = await chatMock(message, context);
+    const details = err instanceof Error ? err.message : String(err);
+
+    return {
+      ...fallback,
+      response: `${fallback.response}\n\n(Provider error: ${details})`,
+    };
+  }
 }

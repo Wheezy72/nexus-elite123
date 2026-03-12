@@ -170,7 +170,7 @@ const ChatPage: React.FC = () => {
             </motion.button>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            Tip: enable App Lock in Settings to encrypt chat history on this device. AI runs in demo mode unless you set a provider key in backend/.env.
+            Tip: enable App Lock in Settings to encrypt chat history on this device (XChaCha20-Poly1305). AI runs in demo mode unless you set a provider key in backend/.env.
           </p>
         </div>
       </GlassCard>

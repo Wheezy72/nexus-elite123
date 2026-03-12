@@ -26,4 +26,7 @@ services:
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-sonnet-latest}
+      ANTHROPIC_VERSION: ${ANTHROPIC_VERSION:-2023-06-01}
     restart: unless-stopped

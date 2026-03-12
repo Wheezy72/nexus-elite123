@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, ShieldCheck } from 'lucide-react';
 import { pinLockService } from '@/services/pinLockService';
+import { backupService } from '@/services/backupService';
 
 const PinGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [ready, setReady] = useState(false);
@@ -21,6 +22,11 @@ const PinGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       const restored = await pinLockService.tryRestoreFromSession();
       setNeedsPin(!restored);
       setReady(true);
+
+      if (restored) {
+        // Fire-and-forget; if buckets/policies aren't configured yet it will just no-op in practice.
+        backupService.maybeAutoBackup();
+      }
     })();
   }, []);
 
@@ -35,6 +41,7 @@ const PinGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       await pinLockService.unlock(trimmed);
       setNeedsPin(false);
       setPin('');
+      backupService.maybeAutoBackup();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to unlock');
     } finally {

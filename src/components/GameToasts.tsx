@@ -36,7 +36,7 @@ const GameToasts: React.FC = () => {
             initial={{ opacity: 0, x: 50, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 50, scale: 0.9 }}
-            className={`pointer-events-auto glass rounded-xl px-4 py-3 flex items-center gap-2.5 min-w-[200px] shadow-[0_8px_30px_rgba(0,0,0,0.3)] ${
+            className={`pointer-events-auto glass rounded-xl px-4 py-3 flex items-center gap-2.5 min-w-[200px] shadow-[0_8px_30px_rgba(0,0,0,0.3)] relative overflow-hidden ${
               toast.type === 'levelup'
                 ? 'border border-amber-500/30'
                 : toast.type === 'achievement'
@@ -44,6 +44,15 @@ const GameToasts: React.FC = () => {
                 : 'border border-white/[0.08]'
             }`}
           >
+            {(toast.type === 'levelup' || toast.type === 'achievement') && (
+              <motion.div
+                aria-hidden
+                className={toast.type === 'levelup' ? 'absolute inset-0 bg-amber-500/10' : 'absolute inset-0 bg-primary/10'}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.35, 0] }}
+                transition={{ duration: 0.9 }}
+              />
+            )}
             {toast.type === 'xp' && <Star className="w-4 h-4 text-amber-400 shrink-0" />}
             {toast.type === 'levelup' && <Trophy className="w-4 h-4 text-amber-400 shrink-0" />}
             {toast.type === 'achievement' && <Trophy className="w-4 h-4 text-primary shrink-0" />}

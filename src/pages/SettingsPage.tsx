@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3, Lock } from 'lucide-react';
+import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3, Lock, Download, HardDrive } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import { pinLockService } from '@/services/pinLockService';
+import { backupService } from '@/services/backupService';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const accentColors = [
@@ -16,6 +18,7 @@ const accentColors = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const { user, profile } = useAuth();
   const [videoBg, setVideoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
   const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('nexus-video-enabled', true);
   const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('nexus-video-opacity', 15);
@@ -28,6 +31,8 @@ const SettingsPage: React.FC = () => {
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backups, setBackups] = useState<Array<{ name: string; path: string; createdAt: string | null }>>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +99,54 @@ const SettingsPage: React.FC = () => {
     toast.success('PIN disabled');
   };
 
+  const refreshBackups = async () => {
+    if (!user) return;
+    try {
+      const list = await backupService.listBackups(10);
+      setBackups(list);
+    } catch {
+      setBackups([]);
+    }
+  };
+
+  const backupNow = async () => {
+    if (!user) return;
+    setBackupBusy(true);
+    try {
+      const backup = await backupService.createBackupObject(profile?.profile_photo_path || null);
+      await backupService.uploadBackup(backup);
+      toast.success('Encrypted backup uploaded');
+      await refreshBackups();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Backup failed');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const restoreLatest = async () => {
+    if (!user) return;
+    setBackupBusy(true);
+    try {
+      const list = backups.length ? backups : await backupService.listBackups(10);
+      const latest = list[0];
+      if (!latest) {
+        toast.error('No backups found');
+        return;
+      }
+
+      if (!confirm(`Restore backup: ${latest.name}? This will overwrite local encrypted chat history.`)) return;
+
+      const decrypted = await backupService.downloadAndDecryptBackup(latest.path);
+      await backupService.restoreFromBackup(decrypted);
+      toast.success('Backup restored');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Restore failed');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   React.useEffect(() => {
     if (accentColor !== '226 70% 55.5%') {
       document.documentElement.style.setProperty('--primary', accentColor);
@@ -106,6 +159,11 @@ const SettingsPage: React.FC = () => {
     document.documentElement.setAttribute('data-grid', showGrid ? '1' : '0');
     document.documentElement.setAttribute('data-blobs', showBlobs ? '1' : '0');
   }, [showNoise, showGrid, showBlobs]);
+
+  React.useEffect(() => {
+    refreshBackups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <PageLayout>
@@ -335,6 +393,57 @@ const SettingsPage: React.FC = () => {
                 )}
               </>
             )}
+          </GlassCard>
+        </motion.div>
+
+        {/* Encrypted Backups */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <HardDrive className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Encrypted Backups</h3>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              Daily encrypted backup + restore for chat and profile photo. Uses your App Lock key (XChaCha20-Poly1305).
+            </p>
+
+            <div className="flex gap-2 mb-3">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={backupNow}
+                disabled={backupBusy || !user}
+                className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+              >
+                Backup now
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={restoreLatest}
+                disabled={backupBusy || !user}
+                className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-xs font-semibold hover:bg-white/[0.06] transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Restore latest
+              </motion.button>
+            </div>
+
+            {backups.length > 0 ? (
+              <div className="space-y-1">
+                {backups.slice(0, 5).map(b => (
+                  <div key={b.path} className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="truncate">{b.name}</span>
+                    <span className="ml-3 shrink-0">{b.createdAt ? new Date(b.createdAt).toLocaleString() : ''}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">No backups found yet.</p>
+            )}
+
+            <p className="text-[10px] text-muted-foreground mt-3">
+              Requires Storage buckets: <span className="font-medium">nexus-backups</span> and <span className="font-medium">nexus-profile</span>.
+            </p>
           </GlassCard>
         </motion.div>
 

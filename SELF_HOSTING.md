@@ -157,6 +157,22 @@ GEMINI_API_KEY=...
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
+**Anthropic (Claude)**
+```env
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=...
+ANTHROPIC_MODEL=claude-3-5-sonnet-latest
+ANTHROPIC_VERSION=2023-06-01
+```
+
+### Encrypted profile photo + encrypted backups (Storage buckets)
+
+To use the encrypted profile photo and encrypted backups features, create these Storage buckets in Supabase:
+- `nexus-profile`
+- `nexus-backups`
+
+You can keep them **private** (recommended). Nexus stores only encrypted blobs in these buckets.
+
 ---
 
 ## Step 5: Run with Docker

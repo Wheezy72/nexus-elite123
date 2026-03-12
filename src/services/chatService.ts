@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { decryptString, encryptString } from '@/lib/encryption';
+import { decryptString, encryptString, type EncryptedPayload } from '@/lib/encryption';
 import { pinLockService } from '@/services/pinLockService';
 
 export interface ChatMessage {
@@ -16,7 +16,8 @@ const STORAGE_KEY = 'nexus-chat-history';
 
 type StoredChatBlob =
   | { v: 1; encrypted: true; payload: { ivB64: string; ciphertextB64: string } }
-  | { v: 1; encrypted: false; messages: ChatMessage[] };
+  | { v: 2; encrypted: true; payload: EncryptedPayload }
+  | { v: 2; encrypted: false; messages: ChatMessage[] };
 
 async function getAccessToken() {
   const { data } = await supabase.auth.getSession();
@@ -35,7 +36,7 @@ async function readStoredBlob(): Promise<StoredChatBlob | null> {
     }
 
     if (!parsed || typeof parsed !== 'object') return null;
-    if (parsed.v !== 1) return null;
+    if (parsed.v !== 1 && parsed.v !== 2) return null;
 
     if (parsed.encrypted === true && parsed.payload) {
       return parsed as StoredChatBlob;
@@ -94,7 +95,7 @@ export const chatService = {
     const key = pinLockService.getVaultKey();
     if (!key) return [];
 
-    const plaintext = await decryptString(blob.payload, key);
+    const plaintext = await decryptString(blob.payload as EncryptedPayload, key);
     const parsed = JSON.parse(plaintext);
     return Array.isArray(parsed) ? parsed : [];
   },
@@ -111,7 +112,7 @@ export const chatService = {
     }
 
     const payload = await encryptString(JSON.stringify(trimmed), key);
-    await writeStoredBlob({ v: 1, encrypted: true, payload });
+    await writeStoredBlob({ v: 2, encrypted: true, payload });
   },
 
   async clearHistory() {

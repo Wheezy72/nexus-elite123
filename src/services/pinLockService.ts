@@ -1,15 +1,16 @@
-import { deriveAesKeyFromPin, decryptString, encryptString, fromBase64, toBase64, type EncryptedPayload } from '@/lib/encryption';
+import { decryptString, deriveKeyFromPin, encryptString, fromBase64, toBase64, type EncryptedPayload } from '@/lib/encryption';
 
 const PIN_STORAGE_KEY = 'nexus-pin-lock';
 const VAULT_KEY_STORAGE_KEY = 'nexus-vault-key-b64';
-const PIN_VERIFIER_TEXT = 'nexus-pin-verifier:v1';
+const PIN_VERIFIER_TEXT_V1 = 'nexus-pin-verifier:v1';
+const PIN_VERIFIER_TEXT_V2 = 'nexus-pin-verifier:v2';
 
 interface PinLockRecord {
   saltB64: string;
   verifier: EncryptedPayload;
 }
 
-let vaultKey: CryptoKey | null = null;
+let vaultKey: Uint8Array | null = null;
 
 function readRecord(): PinLockRecord | null {
   try {
@@ -19,9 +20,19 @@ function readRecord(): PinLockRecord | null {
     if (!parsed || typeof parsed !== 'object') return null;
     if (typeof parsed.saltB64 !== 'string') return null;
     if (!parsed.verifier || typeof parsed.verifier !== 'object') return null;
-    if (typeof parsed.verifier.ivB64 !== 'string') return null;
-    if (typeof parsed.verifier.ciphertextB64 !== 'string') return null;
-    return parsed as PinLockRecord;
+
+    const verifier = parsed.verifier as EncryptedPayload;
+    if (typeof verifier.ciphertextB64 !== 'string') return null;
+    if ('nonceB64' in verifier) {
+      if (typeof verifier.nonceB64 !== 'string') return null;
+      return parsed as PinLockRecord;
+    }
+    if ('ivB64' in verifier) {
+      if (typeof verifier.ivB64 !== 'string') return null;
+      return parsed as PinLockRecord;
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -29,16 +40,6 @@ function readRecord(): PinLockRecord | null {
 
 function writeRecord(record: PinLockRecord) {
   localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(record));
-}
-
-async function exportKeyB64(key: CryptoKey) {
-  const raw = await crypto.subtle.exportKey('raw', key);
-  return toBase64(new Uint8Array(raw));
-}
-
-async function importKeyB64(b64: string) {
-  const raw = fromBase64(b64);
-  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
 }
 
 export const pinLockService = {
@@ -54,19 +55,19 @@ export const pinLockService = {
     const record = readRecord();
     if (!record) throw new Error('No PIN set');
 
-    const key = await deriveAesKeyFromPin(pin, fromBase64(record.saltB64));
+    const key = await deriveKeyFromPin(pin, fromBase64(record.saltB64));
     const verifier = await decryptString(record.verifier, key);
-    if (verifier !== PIN_VERIFIER_TEXT) throw new Error('Wrong PIN');
+    if (verifier !== PIN_VERIFIER_TEXT_V2 && verifier !== PIN_VERIFIER_TEXT_V1) throw new Error('Wrong PIN');
 
     vaultKey = key;
-    sessionStorage.setItem(VAULT_KEY_STORAGE_KEY, await exportKeyB64(key));
+    sessionStorage.setItem(VAULT_KEY_STORAGE_KEY, toBase64(key));
   },
 
   async tryRestoreFromSession() {
     try {
       const b64 = sessionStorage.getItem(VAULT_KEY_STORAGE_KEY);
       if (!b64) return false;
-      vaultKey = await importKeyB64(b64);
+      vaultKey = fromBase64(b64);
       return true;
     } catch {
       vaultKey = null;
@@ -86,8 +87,8 @@ export const pinLockService = {
     }
 
     const salt = crypto.getRandomValues(new Uint8Array(16));
-    const key = await deriveAesKeyFromPin(pin, salt);
-    const verifier = await encryptString(PIN_VERIFIER_TEXT, key);
+    const key = await deriveKeyFromPin(pin, salt);
+    const verifier = await encryptString(PIN_VERIFIER_TEXT_V2, key);
 
     writeRecord({
       saltB64: toBase64(salt),
@@ -95,7 +96,7 @@ export const pinLockService = {
     });
 
     vaultKey = key;
-    sessionStorage.setItem(VAULT_KEY_STORAGE_KEY, await exportKeyB64(key));
+    sessionStorage.setItem(VAULT_KEY_STORAGE_KEY, toBase64(key));
   },
 
   clearPin() {
