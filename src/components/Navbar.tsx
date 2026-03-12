@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   Zap, Timer, Smile, ListTodo, Target, Moon as MoonIcon,
   Droplets, BarChart3, Home, PenLine, BookOpen, Settings,
-  Menu, X, UserCircle
+  Menu, X, MessageCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAvatarById } from '@/pages/ProfilePage';
@@ -17,6 +17,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Home', icon: Home },
+  { to: '/chat', label: 'Chat', icon: MessageCircle },
   { to: '/flow', label: 'Flow', icon: Timer },
   { to: '/tasks', label: 'Tasks', icon: ListTodo },
   { to: '/habits', label: 'Habits', icon: Target },

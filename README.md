@@ -20,6 +20,7 @@ A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Lo
 - 📊 **Stats** — XP, streaks, and analytics
 - 🎮 **Gamification** — XP bar, rewards, achievements
 - 🎨 **Customization** — Accent colors, video backgrounds, visual effects
+- 🤖 **Nexus AI (beta)** — Local AI gateway (mocked by default) to keep API keys off the frontend
 - ☁️ **Cloud Sync** — All data syncs across devices
 
 ## Local Development
@@ -55,7 +56,8 @@ EOF
 npm run dev
 # or: bun dev
 
-# 5. Open http://localhost:8080 in your browser
+# 5. Open http://localhost:5173 in your browser
+#    (AI gateway runs at http://localhost:3001)
 ```
 
 ### Build for Production

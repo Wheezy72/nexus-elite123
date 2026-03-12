@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PinGate from "./components/PinGate";
 import GameToasts from "./components/GameToasts";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -21,12 +22,15 @@ import WaterPage from "./pages/WaterPage";
 import StatsPage from "./pages/StatsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import ChatPage from "./pages/ChatPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const ProtectedApp = ({ children }: { children: React.ReactNode }) => (
-  <ProtectedRoute>{children}</ProtectedRoute>
+  <ProtectedRoute>
+    <PinGate>{children}</PinGate>
+  </ProtectedRoute>
 );
 
 const App = () => (
@@ -53,6 +57,7 @@ const App = () => (
               <Route path="/stats" element={<ProtectedApp><StatsPage /></ProtectedApp>} />
               <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />
               <Route path="/profile" element={<ProtectedApp><ProfilePage /></ProtectedApp>} />
+              <Route path="/chat" element={<ProtectedApp><ChatPage /></ProtectedApp>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AnimatePresence>

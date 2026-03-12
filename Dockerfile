@@ -1,6 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* bun.lockb* ./
+COPY backend/package.json backend/package.json
 RUN npm install
 COPY . .
 ARG VITE_SUPABASE_URL

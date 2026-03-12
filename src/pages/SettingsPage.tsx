@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3 } from 'lucide-react';
+import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3, Lock } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
+import { pinLockService } from '@/services/pinLockService';
+import { toast } from 'sonner';
 
 const accentColors = [
   { name: 'Indigo', hsl: '226 70% 55.5%', preview: 'bg-indigo-500' },
@@ -21,6 +23,11 @@ const SettingsPage: React.FC = () => {
   const [showNoise, setShowNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
   const [showGrid, setShowGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs, setShowBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
+  const [pinEnabled, setPinEnabled] = useState(() => pinLockService.hasPin());
+  const [pinMode, setPinMode] = useState<'off' | 'set' | 'change'>('off');
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,6 +54,44 @@ const SettingsPage: React.FC = () => {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('nexus-'));
     keys.forEach(k => localStorage.removeItem(k));
     window.location.reload();
+  };
+
+  const handlePinSave = async () => {
+    try {
+      if (newPin !== confirmPin) {
+        toast.error('PINs do not match');
+        return;
+      }
+
+      if (pinEnabled) {
+        await pinLockService.unlock(currentPin);
+        localStorage.removeItem('nexus-chat-history');
+        await pinLockService.setPin(newPin);
+        toast.success('PIN updated');
+      } else {
+        await pinLockService.setPin(newPin);
+        toast.success('PIN enabled');
+      }
+
+      setPinEnabled(true);
+      setPinMode('off');
+      setCurrentPin('');
+      setNewPin('');
+      setConfirmPin('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save PIN');
+    }
+  };
+
+  const handlePinDisable = () => {
+    if (!confirm('Disable PIN lock on this device?')) return;
+    pinLockService.clearPin();
+    setPinEnabled(false);
+    setPinMode('off');
+    setCurrentPin('');
+    setNewPin('');
+    setConfirmPin('');
+    toast.success('PIN disabled');
   };
 
   React.useEffect(() => {
@@ -189,6 +234,107 @@ const SettingsPage: React.FC = () => {
                 </div>
               ))}
             </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* App Lock */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <Lock className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">App Lock</h3>
+            </div>
+
+            {!pinEnabled ? (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Add a quick PIN lock on this device. You\'ll unlock Nexus with 4–12 digits.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    value={newPin}
+                    onChange={e => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                    placeholder="New PIN"
+                    inputMode="numeric"
+                    className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <input
+                    value={confirmPin}
+                    onChange={e => setConfirmPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                    placeholder="Confirm PIN"
+                    inputMode="numeric"
+                    className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handlePinSave}
+                  disabled={newPin.length < 4 || newPin !== confirmPin}
+                  className="mt-3 w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                >
+                  Enable PIN
+                </motion.button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  PIN is enabled on this device. Changing it will clear locally-stored encrypted chat history.
+                </p>
+
+                <div className="flex gap-2 mb-3">
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setPinMode(pinMode === 'change' ? 'off' : 'change')}
+                    className="flex-1 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-xs font-semibold hover:bg-white/[0.06] transition-colors"
+                  >
+                    {pinMode === 'change' ? 'Cancel' : 'Change PIN'}
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handlePinDisable}
+                    className="px-4 py-2.5 rounded-xl border border-destructive/30 text-destructive text-xs font-semibold hover:bg-destructive/10 transition-colors"
+                  >
+                    Disable
+                  </motion.button>
+                </div>
+
+                {pinMode === 'change' && (
+                  <div className="space-y-2">
+                    <input
+                      value={currentPin}
+                      onChange={e => setCurrentPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                      placeholder="Current PIN"
+                      inputMode="numeric"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        value={newPin}
+                        onChange={e => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                        placeholder="New PIN"
+                        inputMode="numeric"
+                        className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                      />
+                      <input
+                        value={confirmPin}
+                        onChange={e => setConfirmPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                        placeholder="Confirm PIN"
+                        inputMode="numeric"
+                        className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                      />
+                    </div>
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handlePinSave}
+                      disabled={currentPin.length < 4 || newPin.length < 4 || newPin !== confirmPin}
+                      className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                    >
+                      Save New PIN
+                    </motion.button>
+                  </div>
+                )}
+              </>
+            )}
           </GlassCard>
         </motion.div>
 
