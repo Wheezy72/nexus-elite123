@@ -53,7 +53,7 @@ supabase db push
 Go to **Table Editor** (left sidebar) — you should see these tables:
 - `profiles`, `tasks`, `habits`, `habit_logs`, `journal_entries`
 - `mood_entries`, `sleep_entries`, `water_logs`, `notes`, `goals`, `reminders`
-- `finance_transactions`, `finance_budgets`
+- `finance_transactions`, `finance_budgets`, `finance_categories`, `finance_savings_goals`, `finance_limits`
 
 ---
 
@@ -158,13 +158,7 @@ GEMINI_API_KEY=...
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
-**Anthropic (Claude)**
-```env
-AI_PROVIDER=anthropic
-ANTHROPIC_API_KEY=...
-ANTHROPIC_MODEL=claude-3-5-sonnet-latest
-ANTHROPIC_VERSION=2023-06-01
-```
+
 
 ### Encrypted profile photo + encrypted backups (Storage buckets)
 

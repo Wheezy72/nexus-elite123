@@ -71,6 +71,93 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      finance_limits: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          limit: number
+          period: string
+          updated_at: string
+          user_id: string
+          warn_at_percent: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          limit: number
+          period: string
+          updated_at?: string
+          user_id: string
+          warn_at_percent?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          limit?: number
+          period?: string
+          updated_at?: string
+          user_id?: string
+          warn_at_percent?: number
+        }
+        Relationships: []
+      }
+      finance_savings_goals: {
+        Row: {
+          created_at: string
+          current: number
+          id: string
+          name: string
+          target: number
+          target_date: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current?: number
+          id?: string
+          name: string
+          target: number
+          target_date?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current?: number
+          id?: string
+          name?: string
+          target?: number
+          target_date?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       finance_transactions: {
         Row: {
           amount: number

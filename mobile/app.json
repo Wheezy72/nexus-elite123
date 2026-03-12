@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Nexus Elite",
+    "slug": "nexus-elite",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "permissions": ["READ_SMS"],
+      "package": "com.nexus.elite"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ]
+    ]
+  }
+}

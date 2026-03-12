@@ -4,7 +4,8 @@ import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { chatWithAI, type AIContext } from "./services/aiService";
+import { chatWithAI, getProvider, isAIEnabled, type AIContext } from "./services/aiService";
+import { keywordCategorize, normalizeCategoryName } from "./services/financeCategorizer";
 
 const app = express();
 
@@ -14,6 +15,10 @@ app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/ai/status", (_req, res) => {
+  res.json({ provider: getProvider(), enabled: isAIEnabled() });
 });
 
 const chatBodySchema = z.object({
@@ -27,6 +32,18 @@ const studyPlanSchema = z.object({
   examDate: z.string().min(1).max(50).optional(),
   learningStyle: z.enum(["visual", "text", "hands-on", "mixed"]).default("mixed"),
   hoursAvailable: z.number().min(1).max(80).default(10),
+});
+
+const financeCategorizeSchema = z.object({
+  merchant: z.string().min(1).max(200),
+  categories: z.array(z.string().min(1).max(40)).max(50).default([]),
+});
+
+const financeInsightsSchema = z.object({
+  monthKey: z.string().min(7).max(7), // YYYY-MM
+  budget: z.number().nullable(),
+  totalSpent: z.number().min(0),
+  byCategory: z.array(z.object({ name: z.string(), value: z.number() })).default([]),
 });
 
 const aiLimiter = rateLimit({
@@ -116,6 +133,100 @@ app.post("/api/ai/study-plan", aiLimiter, async (req, res) => {
     // eslint-disable-next-line no-console
     console.warn("Study plan generation failed, returning fallback:", err);
     res.json({ plan: fallbackStudyPlan(subject, duration) });
+  }
+});
+
+app.post("/api/ai/finance/categorize", aiLimiter, async (req, res) => {
+  const parsed = financeCategorizeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const merchant = parsed.data.merchant;
+  const fallback = keywordCategorize(merchant);
+
+  if (!isAIEnabled()) {
+    res.json({ category: fallback, provider: getProvider(), usedAI: false });
+    return;
+  }
+
+  const categories = parsed.data.categories.map(normalizeCategoryName).filter(Boolean);
+
+  const prompt =
+    "Pick the best spending category for this merchant and return ONLY JSON. " +
+    "Schema: {category:string}. Use one from the provided list if possible. " +
+    `Merchant: ${merchant}. Categories: ${JSON.stringify(categories)}.`;
+
+  try {
+    const result = await chatWithAI(prompt, { isADHDContext: false });
+    const raw = result.content.trim();
+
+    const jsonStart = raw.indexOf("{");
+    const jsonEnd = raw.lastIndexOf("}");
+    const candidate = jsonStart >= 0 && jsonEnd >= 0 ? raw.slice(jsonStart, jsonEnd + 1) : raw;
+
+    const data = JSON.parse(candidate) as { category?: string };
+    const cat = normalizeCategoryName(String(data.category || ""));
+
+    res.json({
+      category: cat || fallback,
+      provider: result.provider,
+      usedAI: true,
+    });
+  } catch {
+    res.json({ category: fallback, provider: getProvider(), usedAI: false });
+  }
+});
+
+app.post("/api/ai/finance/insights", aiLimiter, async (req, res) => {
+  const parsed = financeInsightsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const { monthKey, budget, totalSpent, byCategory } = parsed.data;
+  const basic: string[] = [];
+
+  if (budget && budget > 0) {
+    const pct = totalSpent / budget;
+    if (pct >= 1) basic.push(`You're over budget (${Math.round(pct * 100)}%).`);
+    else if (pct >= 0.75) basic.push(`You're at ${Math.round(pct * 100)}% of budget.`);
+  }
+
+  const top = byCategory.sort((a, b) => b.value - a.value)[0];
+  if (top) basic.push(`Top category: ${top.name} (${Math.round(top.value)}).`);
+
+  if (!isAIEnabled()) {
+    res.json({ monthKey, insights: basic, provider: getProvider(), usedAI: false });
+    return;
+  }
+
+  const prompt =
+    "Given this monthly spending snapshot, return ONLY JSON. " +
+    "Schema: {insights:string[],recommendations:string[]}. " +
+    "Make it short and actionable for a student (numbers + tiny next steps). " +
+    `Month: ${monthKey}. Total spent: ${totalSpent}. Budget: ${budget ?? "none"}. By category: ${JSON.stringify(byCategory)}.`;
+
+  try {
+    const result = await chatWithAI(prompt, { isADHDContext: true });
+    const raw = result.content.trim();
+
+    const jsonStart = raw.indexOf("{");
+    const jsonEnd = raw.lastIndexOf("}");
+    const candidate = jsonStart >= 0 && jsonEnd >= 0 ? raw.slice(jsonStart, jsonEnd + 1) : raw;
+
+    const data = JSON.parse(candidate) as { insights?: string[]; recommendations?: string[] };
+    res.json({
+      monthKey,
+      insights: Array.isArray(data.insights) ? data.insights.slice(0, 8) : basic,
+      recommendations: Array.isArray(data.recommendations) ? data.recommendations.slice(0, 8) : [],
+      provider: result.provider,
+      usedAI: true,
+    });
+  } catch {
+    res.json({ monthKey, insights: basic, provider: getProvider(), usedAI: false });
   }
 });
 

@@ -23,7 +23,7 @@ A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Su
 - 🏆 **Achievements** — Trophy cabinet + level progress
 - 🎮 **Gamification** — Levels 1–50, XP, trophies, animations
 - 🎨 **Customization** — Accent colors, video backgrounds, visual effects
-- 🤖 **Nexus AI (beta)** — Local AI gateway (mock by default). Supports OpenAI/Gemini/Anthropic server-side
+- 🤖 **Nexus AI (beta)** — Local AI gateway (mock by default). Supports OpenAI/Gemini server-side
 - 💾 **Encrypted Backups** — Optional encrypted backup + restore (chat + profile photo)
 - ☁️ **Cloud Sync** — Supabase sync for plaintext wellness data (RLS-protected)
 

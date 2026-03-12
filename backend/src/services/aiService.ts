@@ -1,4 +1,4 @@
-export type AIProvider = 'openai' | 'gemini' | 'anthropic' | 'mock';
+export type AIProvider = 'openai' | 'gemini' | 'mock';
 
 export interface AIResponse {
   content: string;
@@ -28,10 +28,14 @@ const BASE_SYSTEM_PROMPT =
   "Conversational and warm, but practical. Avoid medical claims or diagnosis. " +
   "Always give small next steps. Keep answers concise unless asked for detail.";
 
-function getProvider(): AIProvider {
+export function getProvider(): AIProvider {
   const raw = String(process.env.AI_PROVIDER || 'mock').toLowerCase();
-  if (raw === 'openai' || raw === 'gemini' || raw === 'anthropic' || raw === 'mock') return raw;
+  if (raw === 'openai' || raw === 'gemini' || raw === 'mock') return raw;aw === 'openai' || raw === 'gemini' || raw === 'mock') return raw === 'mock') return raw;
   return 'mock';
+}
+
+export function isAIEnabled() {
+  return getProvider() !== 'mock';
 }
 
 function buildSystemPrompt(context?: AIContext): string {
@@ -172,47 +176,7 @@ async function callGemini(systemPrompt: string, prompt: string): Promise<AIRespo
   };
 }
 
-async function callAnthropic(systemPrompt: string, prompt: string): Promise<AIResponse> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('Missing ANTHROPIC_API_KEY. Add it to backend/.env');
 
-  const model = process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-latest';
-
-  const resp = await fetch(process.env.ANTHROPIC_API_URL || 'https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': process.env.ANTHROPIC_VERSION || '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 700,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Anthropic error: ${resp.status} ${text}`);
-  }
-
-  const data = (await resp.json()) as {
-    content?: Array<{ type?: string; text?: string }>;
-    usage?: { input_tokens?: number; output_tokens?: number };
-  };
-
-  return {
-    provider: 'anthropic',
-    model,
-    tokens: {
-      input: data.usage?.input_tokens ?? 0,
-      output: data.usage?.output_tokens ?? 0,
-    },
-    content: data.content?.find(c => c.type === 'text')?.text?.trim() || '',
-  };
-}
 
 export async function chatWithAI(prompt: string, context?: AIContext): Promise<AIResponse> {
   const provider = getProvider();
@@ -222,7 +186,6 @@ export async function chatWithAI(prompt: string, context?: AIContext): Promise<A
   try {
     if (provider === 'openai') return await callOpenAI(systemPrompt, userPrompt);
     if (provider === 'gemini') return await callGemini(systemPrompt, userPrompt);
-    if (provider === 'anthropic') return await callAnthropic(systemPrompt, userPrompt);
     return mockResponse(prompt, context);
   } catch (err) {
     const fallback = mockResponse(prompt, context);
