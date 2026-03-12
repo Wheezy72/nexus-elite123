@@ -53,6 +53,7 @@ supabase db push
 Go to **Table Editor** (left sidebar) — you should see these tables:
 - `profiles`, `tasks`, `habits`, `habit_logs`, `journal_entries`
 - `mood_entries`, `sleep_entries`, `water_logs`, `notes`, `goals`, `reminders`
+- `finance_transactions`, `finance_budgets`
 
 ---
 

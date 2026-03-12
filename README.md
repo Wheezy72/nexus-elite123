@@ -16,7 +16,11 @@ A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Su
 - 🎯 **Goals** — Track progress on daily/weekly goals
 - ⏰ **Reminders** — Scheduled with repeat (once/daily/weekly)
 - ⏱️ **Flow Timer** — Pomodoro-style focus sessions
-- 📊 **Stats** — XP, streaks, analytics
+- 📊 **Stats** — Pomodoro + focus analytics
+- 📈 **Analytics** — Wellness patterns, trends, correlations (mood/sleep/exercise/tasks)
+- 🎓 **Study Planner** — AI-generated study plans + one-click task creation
+- 💸 **Finance** — Monthly budget + expense tracker
+- 🏆 **Achievements** — Trophy cabinet + level progress
 - 🎮 **Gamification** — Levels 1–50, XP, trophies, animations
 - 🎨 **Customization** — Accent colors, video backgrounds, visual effects
 - 🤖 **Nexus AI (beta)** — Local AI gateway (mock by default). Supports OpenAI/Gemini/Anthropic server-side

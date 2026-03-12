@@ -20,6 +20,10 @@ import SleepPage from "./pages/SleepPage";
 import NotesPage from "./pages/NotesPage";
 import WaterPage from "./pages/WaterPage";
 import StatsPage from "./pages/StatsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import StudyPlannerPage from "./pages/StudyPlannerPage";
+import FinancePage from "./pages/FinancePage";
+import AchievementsPage from "./pages/AchievementsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ChatPage from "./pages/ChatPage";
@@ -54,7 +58,11 @@ const App = () => (
               <Route path="/sleep" element={<ProtectedApp><SleepPage /></ProtectedApp>} />
               <Route path="/notes" element={<ProtectedApp><NotesPage /></ProtectedApp>} />
               <Route path="/water" element={<ProtectedApp><WaterPage /></ProtectedApp>} />
+              <Route path="/study" element={<ProtectedApp><StudyPlannerPage /></ProtectedApp>} />
+              <Route path="/analytics" element={<ProtectedApp><AnalyticsPage /></ProtectedApp>} />
               <Route path="/stats" element={<ProtectedApp><StatsPage /></ProtectedApp>} />
+              <Route path="/finance" element={<ProtectedApp><FinancePage /></ProtectedApp>} />
+              <Route path="/achievements" element={<ProtectedApp><AchievementsPage /></ProtectedApp>} />
               <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />
               <Route path="/profile" element={<ProtectedApp><ProfilePage /></ProtectedApp>} />
               <Route path="/chat" element={<ProtectedApp><ChatPage /></ProtectedApp>} />

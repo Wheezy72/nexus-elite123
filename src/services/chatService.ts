@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { decryptString, encryptString, type EncryptedPayload } from '@/lib/encryption';
 import { pinLockService } from '@/services/pinLockService';
+import { behavioralAIService } from '@/services/behavioralAIService';
 
 export interface ChatMessage {
   id: string;
@@ -60,13 +61,48 @@ export const chatService = {
   async sendMessage(message: string, context?: unknown): Promise<ChatMessage> {
     const token = await getAccessToken();
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+
+    const timeOfDay = behavioralAIService.getTimeOfDay();
+
+    const [profile, moodRes, goalsRes] = await Promise.all([
+      (async () => behavioralAIService.getCachedProfile() ?? behavioralAIService.refreshProfile())(),
+      supabase.from('mood_entries').select('emoji,label').order('date', { ascending: false }).limit(1),
+      supabase.from('goals').select('name,current,target').limit(5),
+    ]);
+
+    const moodEntry = moodRes.error ? null : (moodRes.data?.[0] ?? null);
+    const moodValueByLabel: Record<string, number> = { Amazing: 5, Good: 4, Okay: 3, Low: 2, Rough: 1 };
+    const recentMood = moodEntry ? (moodValueByLabel[moodEntry.label] ?? null) : null;
+
+    const goals = goalsRes.error ? [] : (goalsRes.data ?? []);
+
+    const fullContext = {
+      ...(typeof context === 'object' && context != null ? context : {}),
+      userId,
+      timeOfDay,
+      isADHDContext: true,
+      userProfile: {
+        archetype: profile.archetype,
+        peakTime: profile.peakTime,
+        strengths: profile.strengths,
+        challenges: profile.challenges,
+      },
+      recentMood: typeof recentMood === 'number' ? recentMood : undefined,
+      currentGoals: goals.map(g => ({
+        title: g.name,
+        status: g.current >= g.target ? 'complete' : `${g.current}/${g.target}`,
+      })),
+    };
+
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ message, context }),
+      body: JSON.stringify({ message, context: fullContext }),
     });
 
     if (!response.ok) {
@@ -78,7 +114,7 @@ export const chatService = {
     return {
       id: crypto.randomUUID(),
       role: 'assistant',
-      content: String(data.response ?? ''),
+      content: String(data.content ?? data.response ?? ''),
       timestamp: new Date().toISOString(),
       metadata: { citations: Array.isArray(data.citations) ? data.citations : [] },
     };

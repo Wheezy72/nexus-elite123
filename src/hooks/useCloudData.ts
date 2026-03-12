@@ -437,3 +437,102 @@ export function useGoals() {
 
   return { goals, isLoading, addGoal, updateGoal, deleteGoal };
 }
+
+// ==================== FINANCE ====================
+interface FinanceTransaction {
+  id: string;
+  date: string;
+  amount: number;
+  category: string;
+  note: string;
+}
+
+interface FinanceBudget {
+  month: string; // YYYY-MM-01
+  budget: number;
+}
+
+export function useFinance(monthKey: string) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['finance-transactions', user?.id, monthKey],
+    queryFn: async () => {
+      if (!user) return [];
+      const monthStart = `${monthKey}-01`;
+      const [y, m] = monthKey.split('-').map(Number);
+      const monthEnd = new Date(y, m, 0); // last day of month, local-safe
+      const monthEndKey = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`;
+
+      const { data, error } = await supabase
+        .from('finance_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', monthStart)
+        .lte('date', monthEndKey)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(t => ({
+        id: t.id,
+        date: t.date,
+        amount: Number(t.amount),
+        category: t.category,
+        note: t.note || '',
+      }));
+    },
+    enabled: !!user,
+  });
+
+  const { data: budget = null } = useQuery({
+    queryKey: ['finance-budget', user?.id, monthKey],
+    queryFn: async () => {
+      if (!user) return null;
+      const month = `${monthKey}-01`;
+      const { data, error } = await supabase
+        .from('finance_budgets')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('month', month)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return { month: data.month, budget: Number(data.budget) } as FinanceBudget;
+    },
+    enabled: !!user,
+  });
+
+  const addTransaction = useMutation({
+    mutationFn: async (t: { date: string; amount: number; category: string; note: string }) => {
+      if (!user) return;
+      const { error } = await supabase.from('finance_transactions').insert({ user_id: user.id, ...t });
+      if (error) throw error;
+      rewardAction('finance_review');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-transactions'] }),
+  });
+
+  const deleteTransaction = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('finance_transactions').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-transactions'] }),
+  });
+
+  const setBudget = useMutation({
+    mutationFn: async (budgetValue: number) => {
+      if (!user) return;
+      const month = `${monthKey}-01`;
+      const { error } = await supabase.from('finance_budgets').upsert(
+        { user_id: user.id, month, budget: budgetValue },
+        { onConflict: 'user_id,month' }
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-budget'] }),
+  });
+
+  return { transactions, budget, isLoading, addTransaction, deleteTransaction, setBudget };
+}

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, ShieldCheck } from 'lucide-react';
 import { pinLockService } from '@/services/pinLockService';
 import { backupService } from '@/services/backupService';
+import { notificationService } from '@/services/notificationService';
 
 const PinGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [ready, setReady] = useState(false);
@@ -42,6 +43,7 @@ const PinGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       setNeedsPin(false);
       setPin('');
       backupService.maybeAutoBackup();
+      notificationService.bootstrapDaily();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to unlock');
     } finally {

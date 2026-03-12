@@ -47,6 +47,60 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_budgets: {
+        Row: {
+          budget: number
+          created_at: string
+          id: string
+          month: string
+          user_id: string
+        }
+        Insert: {
+          budget: number
+          created_at?: string
+          id?: string
+          month: string
+          user_id: string
+        }
+        Update: {
+          budget?: number
+          created_at?: string
+          id?: string
+          month?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      finance_transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          id: string
+          note: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       habit_logs: {
         Row: {
           date: string

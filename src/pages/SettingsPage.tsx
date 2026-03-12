@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3, Lock, Download, HardDrive } from 'lucide-react';
+import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3, Lock, Download, HardDrive, Bell } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import { pinLockService } from '@/services/pinLockService';
 import { backupService } from '@/services/backupService';
+import { notificationService } from '@/services/notificationService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -292,6 +293,56 @@ const SettingsPage: React.FC = () => {
                 </div>
               ))}
             </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* Smart Notifications */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <Bell className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Smart Notifications</h3>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              Optional daily insights (runs while the app is open). You can also allow browser notifications.
+            </p>
+
+            <div className="flex items-center justify-between py-1">
+              <span className="text-xs text-foreground">Enable smart notifications</span>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => {
+                  const next = !smartNotifsEnabled;
+                  setSmartNotifsEnabled(next);
+                  notificationService.setEnabled(next);
+                  if (next) notificationService.bootstrapDaily();
+                }}
+                className={`w-10 h-5 rounded-full relative transition-colors ${
+                  smartNotifsEnabled ? 'bg-primary/30' : 'bg-white/[0.06]'
+                }`}
+              >
+                <motion.div
+                  animate={{ x: smartNotifsEnabled ? 20 : 2 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className={`absolute top-0.5 w-4 h-4 rounded-full ${
+                    smartNotifsEnabled ? 'bg-primary' : 'bg-muted-foreground'
+                  }`}
+                />
+              </motion.button>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={async () => {
+                const perm = await notificationService.requestPermission();
+                if (perm === 'granted') toast.success('Browser notifications enabled');
+                else toast.error('Browser notifications not enabled');
+              }}
+              className="mt-3 w-full py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-xs font-semibold hover:bg-white/[0.06] transition-colors"
+            >
+              Enable browser notifications
+            </motion.button>
           </GlassCard>
         </motion.div>
 
