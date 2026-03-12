@@ -4,6 +4,8 @@ import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
+import fs from "node:fs";
+import path from "node:path";
 import { chatWithAI, getProvider, isAIEnabled, type AIContext } from "./services/aiService";
 import { keywordCategorize, normalizeCategoryName } from "./services/financeCategorizer";
 
@@ -230,8 +232,20 @@ app.post("/api/ai/finance/insights", aiLimiter, async (req, res) => {
   }
 });
 
+const frontendDist = path.resolve(process.cwd(), "../dist");
+const frontendIndex = path.join(frontendDist, "index.html");
+
+if (fs.existsSync(frontendIndex)) {
+  app.use(express.static(frontendDist, { maxAge: "1y", index: false }));
+
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
+    res.sendFile(frontendIndex);
+  });
+}
+
 const port = Number(process.env.PORT || 3001);
 app.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Nexus Elite Backend running on port ${port}`);
+  console.log(`Nexus Elite running on http://localhost:${port}`);
 });

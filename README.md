@@ -57,6 +57,15 @@ npm run dev
 # Backend:  http://localhost:3001/api/health
 ```
 
+### Run “production mode” without Docker
+
+This builds the frontend and then serves it from the backend Node server (single process).
+
+```bash
+npm run prod
+# Opens: http://localhost:3001
+```
+
 ### Tests
 
 ```bash

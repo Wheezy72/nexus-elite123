@@ -30,7 +30,7 @@ const BASE_SYSTEM_PROMPT =
 
 export function getProvider(): AIProvider {
   const raw = String(process.env.AI_PROVIDER || 'mock').toLowerCase();
-  if (raw === 'openai' || raw === 'gemini' || raw === 'mock') return raw;aw === 'openai' || raw === 'gemini' || raw === 'mock') return raw === 'mock') return raw;
+  if (raw === 'openai' || raw === 'gemini' || raw === 'mock') return raw;
   return 'mock';
 }
 
@@ -76,10 +76,10 @@ function buildUserPrompt(message: string, context?: AIContext) {
   return `${message}\n\nContext (JSON): ${JSON.stringify(safeContext)}`;
 }
 
-function mockResponse(prompt: string, _context?: AIContext): AIResponse {
+function mockResponse(_prompt: string, _context?: AIContext): AIResponse {
   const responses = [
     "Let's break it down: pick one 10-minute task you can do right now.",
-    "Quick plan: 1) set a 15-min timer 2) do the first tiny step 3) stop and reassess.",
+    'Quick plan: 1) set a 15-min timer 2) do the first tiny step 3) stop and reassess.',
     "You're not behind — you're overloaded. Want a realistic plan for today?",
   ];
 
@@ -175,8 +175,6 @@ async function callGemini(systemPrompt: string, prompt: string): Promise<AIRespo
     content: data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '',
   };
 }
-
-
 
 export async function chatWithAI(prompt: string, context?: AIContext): Promise<AIResponse> {
   const provider = getProvider();

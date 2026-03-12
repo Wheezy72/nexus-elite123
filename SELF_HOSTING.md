@@ -170,9 +170,15 @@ You can keep them **private** (recommended). Nexus stores only encrypted blobs i
 
 ---
 
-## Step 5: Run with Docker
+## Step 5: Run the app
 
-### Prerequisites
+You have two options:
+- **Option A (recommended): Docker** (easiest to run as a LAN "app" on your phone)
+- **Option B: No Docker** (build + run with Node only)
+
+### Option A: Docker
+
+#### Prerequisites
 
 - [Docker Desktop](https://docker.com/products/docker-desktop) installed (Windows, Mac, or Linux)
 - That's it!
@@ -228,6 +234,35 @@ docker-compose logs -f
 # Check if running
 docker-compose ps
 ```
+
+### Option B: No Docker (Windows-friendly)
+
+This runs the backend and serves the built frontend from the same Node server.
+
+1) Install dependencies:
+```bash
+npm install
+```
+
+2) Create env files:
+```bash
+copy .env.example .env
+copy backend\.env.example backend\.env
+```
+
+3) Build + run:
+```bash
+npm run prod
+```
+
+Open:
+- http://localhost:3001
+
+To access on your phone (same Wi‑Fi):
+- find your PC IP (Windows: `ipconfig` → IPv4 Address)
+- open: `http://YOUR_IP:3001`
+
+> Note: for "installable" PWA on phones, HTTPS is usually required. On LAN HTTP you can still use it in the browser.
 
 ---
 
