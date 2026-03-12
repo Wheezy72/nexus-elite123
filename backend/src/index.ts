@@ -11,8 +11,21 @@ import { keywordCategorize, normalizeCategoryName } from "./services/financeCate
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 app.use(helmet());
-app.use(cors());
+
+const corsOrigin = process.env.CORS_ORIGIN;
+if (corsOrigin) {
+  const origins = corsOrigin
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  app.use(cors({ origin: origins, credentials: true }));
+} else {
+  app.use(cors());
+}
+
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (_req, res) => {

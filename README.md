@@ -86,9 +86,10 @@ npm run android
 
 See `mobile/README.md` for permissions and notes.
 
-## Self-hosting
+## Self-hosting / deployment
 
-See `SELF_HOSTING.md`.
+- Local/self-host: `SELF_HOSTING.md`
+- Deploy to the internet (recommended for phone + laptop): `DEPLOYMENT.md`
 
 ## License
 
