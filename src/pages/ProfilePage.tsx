@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Loader2, LogOut } from 'lucide-react';
+import { Check, Loader2, LogOut, Upload, Trash2, Lock } from 'lucide-react';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { decryptBytes, encryptBytes } from '@/lib/encryption';
+import { packEncryptedContainer, unpackEncryptedContainer } from '@/lib/encryptedContainer';
+import { pinLockService } from '@/services/pinLockService';
 import { toast } from 'sonner';
 
 const AVATARS = [
@@ -39,6 +42,9 @@ const ProfilePage: React.FC = () => {
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar_url || 'avatar-01');
   const [saving, setSaving] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (profile) {
@@ -46,6 +52,48 @@ const ProfilePage: React.FC = () => {
       setSelectedAvatar(profile.avatar_url || 'avatar-01');
     }
   }, [profile]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      if (!user?.id) return;
+      const path = profile?.profile_photo_path || null;
+      if (!path) {
+        setPhotoUrl(null);
+        return;
+      }
+
+      const key = pinLockService.getVaultKey();
+      if (!key) {
+        setPhotoUrl(null);
+        return;
+      }
+
+      try {
+        setPhotoBusy(true);
+        const { data, error } = await supabase.storage.from('nexus-profile').download(path);
+        if (error) throw error;
+
+        const buf = new Uint8Array(await data.arrayBuffer());
+        const unpacked = unpackEncryptedContainer(buf);
+
+        const plaintext = await decryptBytes(unpacked.payload, key);
+        const contentType = typeof unpacked.header.contentType === 'string' ? unpacked.header.contentType : 'image/png';
+
+        const url = URL.createObjectURL(new Blob([plaintext], { type: contentType }));
+        if (!cancelled) setPhotoUrl(url);
+      } catch {
+        if (!cancelled) setPhotoUrl(null);
+      } finally {
+        if (!cancelled) setPhotoBusy(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, profile?.profile_photo_path]);
 
   const save = async () => {
     if (!user) return;
@@ -65,6 +113,70 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const canUseEncryptedPhoto = pinLockService.isUnlocked();
+
+  const uploadPhoto = async (file: File) => {
+    if (!user) return;
+
+    const key = pinLockService.getVaultKey();
+    if (!key) {
+      toast.error('Enable App Lock and unlock with your PIN to use encrypted profile photos');
+      return;
+    }
+
+    setPhotoBusy(true);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const payload = await encryptBytes(bytes, key);
+
+      const packed = packEncryptedContainer(payload, {
+        contentType: file.type || 'image/png',
+      });
+
+      const container = new Blob([packed], { type: 'application/octet-stream' });
+
+      const path = `${user.id}/profile-photo.bin`;
+      const { error: uploadError } = await supabase.storage.from('nexus-profile').upload(path, container, {
+        upsert: true,
+        contentType: 'application/octet-stream',
+      });
+      if (uploadError) throw uploadError;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ profile_photo_path: path })
+        .eq('user_id', user.id);
+      if (updateError) throw updateError;
+
+      await refreshProfile();
+      toast.success('Encrypted profile photo updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload photo');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!user) return;
+    const path = profile?.profile_photo_path || null;
+    if (!path) return;
+
+    setPhotoBusy(true);
+    try {
+      await supabase.storage.from('nexus-profile').remove([path]);
+      const { error } = await supabase.from('profiles').update({ profile_photo_path: null }).eq('user_id', user.id);
+      if (error) throw error;
+      await refreshProfile();
+      setPhotoUrl(null);
+      toast.success('Profile photo removed');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove photo');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   const currentAvatar = getAvatarById(selectedAvatar);
 
   return (
@@ -76,10 +188,14 @@ const ProfilePage: React.FC = () => {
         <motion.div variants={staggerItem}>
           <GlassCard className="p-6" tilt={false}>
             <div className="flex items-center gap-4 mb-6">
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${currentAvatar.bg} border border-white/10 flex items-center justify-center text-3xl`}>
-                {currentAvatar.emoji}
+              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${currentAvatar.bg} border border-white/10 flex items-center justify-center overflow-hidden`}>
+                {photoUrl ? (
+                  <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-3xl">{currentAvatar.emoji}</div>
+                )}
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-foreground font-semibold">{displayName || 'User'}</h3>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
@@ -92,6 +208,57 @@ const ProfilePage: React.FC = () => {
               onChange={e => setDisplayName(e.target.value.slice(0, 50))}
               className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm focus:outline-none focus:border-primary/40 transition-colors mb-4"
             />
+
+            {/* Encrypted Profile Photo */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs text-muted-foreground">Encrypted Profile Photo</label>
+                {!canUseEncryptedPhoto && (
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Lock className="w-3 h-3" />
+                    Unlock required
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={photoBusy}
+                  className="flex-1 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-xs font-semibold hover:bg-white/[0.06] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {photoUrl ? 'Replace Photo' : 'Upload Photo'}
+                </motion.button>
+
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={removePhoto}
+                  disabled={photoBusy || !profile?.profile_photo_path}
+                  className="px-4 py-2.5 rounded-xl border border-destructive/30 text-destructive text-xs font-semibold hover:bg-destructive/10 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Remove
+                </motion.button>
+              </div>
+
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadPhoto(file);
+                  e.target.value = '';
+                }}
+              />
+
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Stored end-to-end encrypted with XChaCha20-Poly1305. Requires App Lock PIN on this device.
+              </p>
+            </div>
 
             {/* Avatar Grid */}
             <label className="text-xs text-muted-foreground block mb-2">Choose Avatar</label>

@@ -1,9 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3 } from 'lucide-react';
+import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3, Lock, Download, HardDrive, Bell } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
+import { pinLockService } from '@/services/pinLockService';
+import { backupService } from '@/services/backupService';
+import { notificationService } from '@/services/notificationService';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const accentColors = [
   { name: 'Indigo', hsl: '226 70% 55.5%', preview: 'bg-indigo-500' },
@@ -14,6 +19,7 @@ const accentColors = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const { user, profile } = useAuth();
   const [videoBg, setVideoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
   const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('nexus-video-enabled', true);
   const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('nexus-video-opacity', 15);
@@ -21,6 +27,13 @@ const SettingsPage: React.FC = () => {
   const [showNoise, setShowNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
   const [showGrid, setShowGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs, setShowBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
+  const [pinEnabled, setPinEnabled] = useState(() => pinLockService.hasPin());
+  const [pinMode, setPinMode] = useState<'off' | 'set' | 'change'>('off');
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backups, setBackups] = useState<Array<{ name: string; path: string; createdAt: string | null }>>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +62,92 @@ const SettingsPage: React.FC = () => {
     window.location.reload();
   };
 
+  const handlePinSave = async () => {
+    try {
+      if (newPin !== confirmPin) {
+        toast.error('PINs do not match');
+        return;
+      }
+
+      if (pinEnabled) {
+        await pinLockService.unlock(currentPin);
+        localStorage.removeItem('nexus-chat-history');
+        await pinLockService.setPin(newPin);
+        toast.success('PIN updated');
+      } else {
+        await pinLockService.setPin(newPin);
+        toast.success('PIN enabled');
+      }
+
+      setPinEnabled(true);
+      setPinMode('off');
+      setCurrentPin('');
+      setNewPin('');
+      setConfirmPin('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save PIN');
+    }
+  };
+
+  const handlePinDisable = () => {
+    if (!confirm('Disable PIN lock on this device?')) return;
+    pinLockService.clearPin();
+    setPinEnabled(false);
+    setPinMode('off');
+    setCurrentPin('');
+    setNewPin('');
+    setConfirmPin('');
+    toast.success('PIN disabled');
+  };
+
+  const refreshBackups = async () => {
+    if (!user) return;
+    try {
+      const list = await backupService.listBackups(10);
+      setBackups(list);
+    } catch {
+      setBackups([]);
+    }
+  };
+
+  const backupNow = async () => {
+    if (!user) return;
+    setBackupBusy(true);
+    try {
+      const backup = await backupService.createBackupObject(profile?.profile_photo_path || null);
+      await backupService.uploadBackup(backup);
+      toast.success('Encrypted backup uploaded');
+      await refreshBackups();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Backup failed');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const restoreLatest = async () => {
+    if (!user) return;
+    setBackupBusy(true);
+    try {
+      const list = backups.length ? backups : await backupService.listBackups(10);
+      const latest = list[0];
+      if (!latest) {
+        toast.error('No backups found');
+        return;
+      }
+
+      if (!confirm(`Restore backup: ${latest.name}? This will overwrite local encrypted chat history.`)) return;
+
+      const decrypted = await backupService.downloadAndDecryptBackup(latest.path);
+      await backupService.restoreFromBackup(decrypted);
+      toast.success('Backup restored');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Restore failed');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   React.useEffect(() => {
     if (accentColor !== '226 70% 55.5%') {
       document.documentElement.style.setProperty('--primary', accentColor);
@@ -61,6 +160,11 @@ const SettingsPage: React.FC = () => {
     document.documentElement.setAttribute('data-grid', showGrid ? '1' : '0');
     document.documentElement.setAttribute('data-blobs', showBlobs ? '1' : '0');
   }, [showNoise, showGrid, showBlobs]);
+
+  React.useEffect(() => {
+    refreshBackups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <PageLayout>
@@ -189,6 +293,208 @@ const SettingsPage: React.FC = () => {
                 </div>
               ))}
             </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* Smart Notifications */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <Bell className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Smart Notifications</h3>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              Optional daily insights (runs while the app is open). You can also allow browser notifications.
+            </p>
+
+            <div className="flex items-center justify-between py-1">
+              <span className="text-xs text-foreground">Enable smart notifications</span>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => {
+                  const next = !smartNotifsEnabled;
+                  setSmartNotifsEnabled(next);
+                  notificationService.setEnabled(next);
+                  if (next) notificationService.bootstrapDaily();
+                }}
+                className={`w-10 h-5 rounded-full relative transition-colors ${
+                  smartNotifsEnabled ? 'bg-primary/30' : 'bg-white/[0.06]'
+                }`}
+              >
+                <motion.div
+                  animate={{ x: smartNotifsEnabled ? 20 : 2 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className={`absolute top-0.5 w-4 h-4 rounded-full ${
+                    smartNotifsEnabled ? 'bg-primary' : 'bg-muted-foreground'
+                  }`}
+                />
+              </motion.button>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={async () => {
+                const perm = await notificationService.requestPermission();
+                if (perm === 'granted') toast.success('Browser notifications enabled');
+                else toast.error('Browser notifications not enabled');
+              }}
+              className="mt-3 w-full py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-xs font-semibold hover:bg-white/[0.06] transition-colors"
+            >
+              Enable browser notifications
+            </motion.button>
+          </GlassCard>
+        </motion.div>
+
+        {/* App Lock */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <Lock className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">App Lock</h3>
+            </div>
+
+            {!pinEnabled ? (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Add a quick PIN lock on this device. You\'ll unlock Nexus with 4–12 digits.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    value={newPin}
+                    onChange={e => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                    placeholder="New PIN"
+                    inputMode="numeric"
+                    className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <input
+                    value={confirmPin}
+                    onChange={e => setConfirmPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                    placeholder="Confirm PIN"
+                    inputMode="numeric"
+                    className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handlePinSave}
+                  disabled={newPin.length < 4 || newPin !== confirmPin}
+                  className="mt-3 w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                >
+                  Enable PIN
+                </motion.button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  PIN is enabled on this device. Changing it will clear locally-stored encrypted chat history.
+                </p>
+
+                <div className="flex gap-2 mb-3">
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setPinMode(pinMode === 'change' ? 'off' : 'change')}
+                    className="flex-1 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-xs font-semibold hover:bg-white/[0.06] transition-colors"
+                  >
+                    {pinMode === 'change' ? 'Cancel' : 'Change PIN'}
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handlePinDisable}
+                    className="px-4 py-2.5 rounded-xl border border-destructive/30 text-destructive text-xs font-semibold hover:bg-destructive/10 transition-colors"
+                  >
+                    Disable
+                  </motion.button>
+                </div>
+
+                {pinMode === 'change' && (
+                  <div className="space-y-2">
+                    <input
+                      value={currentPin}
+                      onChange={e => setCurrentPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                      placeholder="Current PIN"
+                      inputMode="numeric"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        value={newPin}
+                        onChange={e => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                        placeholder="New PIN"
+                        inputMode="numeric"
+                        className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                      />
+                      <input
+                        value={confirmPin}
+                        onChange={e => setConfirmPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                        placeholder="Confirm PIN"
+                        inputMode="numeric"
+                        className="px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                      />
+                    </div>
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handlePinSave}
+                      disabled={currentPin.length < 4 || newPin.length < 4 || newPin !== confirmPin}
+                      className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                    >
+                      Save New PIN
+                    </motion.button>
+                  </div>
+                )}
+              </>
+            )}
+          </GlassCard>
+        </motion.div>
+
+        {/* Encrypted Backups */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <HardDrive className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Encrypted Backups</h3>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              Daily encrypted backup + restore for chat and profile photo. Uses your App Lock key (XChaCha20-Poly1305).
+            </p>
+
+            <div className="flex gap-2 mb-3">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={backupNow}
+                disabled={backupBusy || !user}
+                className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+              >
+                Backup now
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={restoreLatest}
+                disabled={backupBusy || !user}
+                className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-xs font-semibold hover:bg-white/[0.06] transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Restore latest
+              </motion.button>
+            </div>
+
+            {backups.length > 0 ? (
+              <div className="space-y-1">
+                {backups.slice(0, 5).map(b => (
+                  <div key={b.path} className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="truncate">{b.name}</span>
+                    <span className="ml-3 shrink-0">{b.createdAt ? new Date(b.createdAt).toLocaleString() : ''}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">No backups found yet.</p>
+            )}
+
+            <p className="text-[10px] text-muted-foreground mt-3">
+              Requires Storage buckets: <span className="font-medium">nexus-backups</span> and <span className="font-medium">nexus-profile</span>.
+            </p>
           </GlassCard>
         </motion.div>
 

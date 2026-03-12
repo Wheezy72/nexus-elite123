@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   Zap, Timer, Smile, ListTodo, Target, Moon as MoonIcon,
   Droplets, BarChart3, Home, PenLine, BookOpen, Settings,
-  Menu, X, UserCircle
+  Menu, X, MessageCircle, Trophy, GraduationCap, DollarSign, Activity
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAvatarById } from '@/pages/ProfilePage';
@@ -17,6 +17,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Home', icon: Home },
+  { to: '/chat', label: 'Chat', icon: MessageCircle },
+  { to: '/study', label: 'Study', icon: GraduationCap },
   { to: '/flow', label: 'Flow', icon: Timer },
   { to: '/tasks', label: 'Tasks', icon: ListTodo },
   { to: '/habits', label: 'Habits', icon: Target },
@@ -25,7 +27,10 @@ const navItems: NavItem[] = [
   { to: '/sleep', label: 'Sleep', icon: MoonIcon },
   { to: '/notes', label: 'Notes', icon: BookOpen },
   { to: '/water', label: 'Water', icon: Droplets },
+  { to: '/analytics', label: 'Analytics', icon: Activity },
   { to: '/stats', label: 'Stats', icon: BarChart3 },
+  { to: '/finance', label: 'Finance', icon: DollarSign },
+  { to: '/achievements', label: 'Trophies', icon: Trophy },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

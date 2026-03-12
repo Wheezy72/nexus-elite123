@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { rewardAction } from '@/lib/rewards';
+import { financeOfflineService } from '@/services/financeOfflineService';
 
 // ==================== TASKS ====================
 interface Task {
@@ -436,4 +437,391 @@ export function useGoals() {
   });
 
   return { goals, isLoading, addGoal, updateGoal, deleteGoal };
+}
+
+// ==================== FINANCE ====================
+
+export interface FinanceTransaction {
+  id: string;
+  date: string;
+  amount: number;
+  category: string;
+  note: string;
+  pending?: boolean;
+}
+
+export interface FinanceBudget {
+  month: string; // YYYY-MM-01
+  budget: number;
+  pending?: boolean;
+}
+
+export interface FinanceCategory {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface FinanceSavingsGoal {
+  id: string;
+  name: string;
+  target: number;
+  current: number;
+  targetDate?: string;
+  createdAt: string;
+}
+
+export interface FinanceLimit {
+  id: string;
+  period: 'daily' | 'weekly' | 'monthly';
+  limit: number;
+  category?: string | null;
+  warnAtPercent: number;
+}
+
+function financeCategoriesCacheKey(userId: string) {
+  return `nexus-finance-categories-v1:${userId}`;
+}
+
+export function useFinanceCategories() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ['finance-categories', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      if (!navigator.onLine) {
+        const raw = localStorage.getItem(financeCategoriesCacheKey(user.id));
+        if (!raw) return [];
+        try {
+          return JSON.parse(raw) as FinanceCategory[];
+        } catch {
+          return [];
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('finance_categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+
+      const mapped = (data || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        color: c.color,
+        createdAt: c.created_at,
+      }));
+
+      localStorage.setItem(financeCategoriesCacheKey(user.id), JSON.stringify(mapped));
+      return mapped;
+    },
+    enabled: !!user,
+  });
+
+  const addCategory = useMutation({
+    mutationFn: async (cat: { name: string; color: string }) => {
+      if (!user) return;
+      const { error } = await supabase.from('finance_categories').insert({ user_id: user.id, name: cat.name, color: cat.color });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-categories'] }),
+  });
+
+  const deleteCategory = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('finance_categories').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-categories'] }),
+  });
+
+  return { categories, isLoading, addCategory, deleteCategory };
+}
+
+export function useFinanceSavingsGoals() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: goals = [], isLoading } = useQuery({
+    queryKey: ['finance-savings-goals', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('finance_savings_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []).map(g => ({
+        id: g.id,
+        name: g.name,
+        target: Number(g.target),
+        current: Number(g.current),
+        targetDate: g.target_date || undefined,
+        createdAt: g.created_at,
+      }));
+    },
+    enabled: !!user,
+  });
+
+  const addGoal = useMutation({
+    mutationFn: async (goal: { name: string; target: number; targetDate?: string }) => {
+      if (!user) return;
+      const { error } = await supabase.from('finance_savings_goals').insert({
+        user_id: user.id,
+        name: goal.name,
+        target: goal.target,
+        target_date: goal.targetDate || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-savings-goals'] }),
+  });
+
+  const updateGoal = useMutation({
+    mutationFn: async ({ id, current }: { id: string; current: number }) => {
+      const { error } = await supabase.from('finance_savings_goals').update({ current }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-savings-goals'] }),
+  });
+
+  const deleteGoal = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('finance_savings_goals').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-savings-goals'] }),
+  });
+
+  return { goals, isLoading, addGoal, updateGoal, deleteGoal };
+}
+
+export function useFinanceLimits() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: limits = [], isLoading } = useQuery({
+    queryKey: ['finance-limits', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('finance_limits')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data || []).map(l => ({
+        id: l.id,
+        period: l.period as FinanceLimit['period'],
+        limit: Number(l.limit),
+        category: l.category,
+        warnAtPercent: Number(l.warn_at_percent),
+      }));
+    },
+    enabled: !!user,
+  });
+
+  const upsertLimit = useMutation({
+    mutationFn: async (limit: { period: FinanceLimit['period']; limit: number; category?: string | null; warnAtPercent: number }) => {
+      if (!user) return;
+      const { error } = await supabase.from('finance_limits').upsert(
+        {
+          user_id: user.id,
+          period: limit.period,
+          limit: limit.limit,
+          category: limit.category || null,
+          warn_at_percent: limit.warnAtPercent,
+        },
+        { onConflict: 'user_id,period,category' }
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-limits'] }),
+  });
+
+  const deleteLimit = useMutation({
+    mutationFn: async ({ period, category }: { period: FinanceLimit['period']; category?: string | null }) => {
+      if (!user) return;
+      let q = supabase.from('finance_limits').delete().eq('user_id', user.id).eq('period', period);
+      if (category) q = q.eq('category', category);
+      else q = q.is('category', null);
+      const { error } = await q;
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-limits'] }),
+  });
+
+  return { limits, isLoading, upsertLimit, deleteLimit };
+}
+
+export function useFinance(monthKey: string) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['finance-transactions', user?.id, monthKey],
+    queryFn: async () => {
+      if (!user) return [];
+
+      if (navigator.onLine) {
+        await financeOfflineService.syncMonth(user.id, monthKey, supabase);
+      }
+
+      if (!navigator.onLine) {
+        const cache = financeOfflineService.getMonthSnapshot(user.id, monthKey);
+        return cache.snapshot;
+      }
+
+      const monthStart = `${monthKey}-01`;
+      const [y, m] = monthKey.split('-').map(Number);
+      const monthEnd = new Date(y, m, 0);
+      const monthEndKey = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`;
+
+      const { data, error } = await supabase
+        .from('finance_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', monthStart)
+        .lte('date', monthEndKey)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      const mapped = (data || []).map(t => ({
+        id: t.id,
+        date: t.date,
+        amount: Number(t.amount),
+        category: t.category,
+        note: t.note || '',
+        pending: false,
+      }));
+
+      const cache = financeOfflineService.getMonthSnapshot(user.id, monthKey);
+      financeOfflineService.setMonthSnapshot(user.id, monthKey, {
+        ...cache,
+        snapshot: mapped,
+      });
+
+      return mapped;
+    },
+    enabled: !!user,
+  });
+
+  const { data: budget = null } = useQuery({
+    queryKey: ['finance-budget', user?.id, monthKey],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const month = `${monthKey}-01`;
+      const cache = financeOfflineService.getMonthSnapshot(user.id, monthKey);
+
+      if (!navigator.onLine) {
+        if (cache.budget == null) return null;
+        return { month, budget: cache.budget, pending: !!cache.budgetPending } as FinanceBudget;
+      }
+
+      await financeOfflineService.syncMonth(user.id, monthKey, supabase);
+
+      const { data, error } = await supabase
+        .from('finance_budgets')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('month', month)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        financeOfflineService.setMonthSnapshot(user.id, monthKey, { ...cache, budget: null, budgetPending: false });
+        return null;
+      }
+
+      const mapped = { month: data.month, budget: Number(data.budget), pending: false } as FinanceBudget;
+      financeOfflineService.setMonthSnapshot(user.id, monthKey, { ...cache, budget: mapped.budget, budgetPending: false });
+      return mapped;
+    },
+    enabled: !!user,
+  });
+
+  const addTransaction = useMutation({
+    mutationFn: async (t: { id?: string; date: string; amount: number; category: string; note: string }) => {
+      if (!user) return;
+      const id = t.id || crypto.randomUUID();
+      const payload = { id, date: t.date, amount: t.amount, category: t.category, note: t.note || '' };
+
+      if (!navigator.onLine) {
+        financeOfflineService.addLocalTransaction(user.id, monthKey, payload);
+        qc.setQueryData(['finance-transactions', user.id, monthKey], (old: FinanceTransaction[] = []) => [
+          { ...payload, pending: true },
+          ...old,
+        ]);
+        rewardAction('finance_review');
+        return;
+      }
+
+      await financeOfflineService.syncMonth(user.id, monthKey, supabase);
+      const { error } = await supabase.from('finance_transactions').insert({ user_id: user.id, ...payload });
+      if (error) throw error;
+      rewardAction('finance_review');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-transactions'] }),
+  });
+
+  const deleteTransaction = useMutation({
+    mutationFn: async (id: string) => {
+      if (!user) return;
+
+      if (!navigator.onLine) {
+        financeOfflineService.deleteLocalTransaction(user.id, monthKey, id);
+        qc.setQueryData(['finance-transactions', user.id, monthKey], (old: FinanceTransaction[] = []) => old.filter(t => t.id !== id));
+        return;
+      }
+
+      await financeOfflineService.syncMonth(user.id, monthKey, supabase);
+      const { error } = await supabase.from('finance_transactions').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-transactions'] }),
+  });
+
+  const setBudget = useMutation({
+    mutationFn: async (budgetValue: number) => {
+      if (!user) return;
+      const month = `${monthKey}-01`;
+
+      if (!navigator.onLine) {
+        financeOfflineService.setLocalBudget(user.id, monthKey, month, budgetValue);
+        qc.setQueryData(['finance-budget', user.id, monthKey], { month, budget: budgetValue, pending: true } as FinanceBudget);
+        return;
+      }
+
+      await financeOfflineService.syncMonth(user.id, monthKey, supabase);
+      const { error } = await supabase.from('finance_budgets').upsert(
+        { user_id: user.id, month, budget: budgetValue },
+        { onConflict: 'user_id,month' }
+      );
+      if (error) throw error;
+
+      financeOfflineService.markBudgetSynced(user.id, monthKey);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-budget'] }),
+  });
+
+  const syncNow = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
+      if (!navigator.onLine) return;
+      await financeOfflineService.syncMonth(user.id, monthKey, supabase);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['finance-transactions'] });
+      qc.invalidateQueries({ queryKey: ['finance-budget'] });
+    },
+  });
+
+  return { transactions, budget, isLoading, addTransaction, deleteTransaction, setBudget, syncNow };
 }

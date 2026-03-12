@@ -7,6 +7,7 @@ interface Profile {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  profile_photo_path?: string | null;
 }
 
 interface AuthContextType {
