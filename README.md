@@ -45,6 +45,11 @@ npm install
 cp .env.example .env
 cp backend/.env.example backend/.env
 
+# .env expects:
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_ANON_KEY
+#   VITE_SUPABASE_PROJECT_ID
+
 # 3. (Optional) Encrypted profile photos + encrypted backups
 # Create these Supabase Storage buckets:
 #   - nexus-profile

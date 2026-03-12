@@ -98,33 +98,12 @@ Nothing to do — it works out of the box.
 3. Paste your **Client ID** and **Client Secret**
 4. Click **Save**
 
-#### C. Update the Code
+#### C. App configuration
 
-The app uses Lovable's managed OAuth by default. For self-hosting, edit `src/pages/AuthPage.tsx`:
+No code changes are required.
 
-**Remove** this import:
-```typescript
-import { lovable } from '@/integrations/lovable/index';
-```
-
-**Replace** the `handleGoogle` function with:
-```typescript
-const handleGoogle = async () => {
-  setLoading(true);
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) throw error;
-  } catch (err: any) {
-    toast.error(err.message || 'Google sign-in failed');
-    setLoading(false);
-  }
-};
-```
-
-> 💡 **Or** just remove the Google button entirely if email/password is enough for you.
+- The app uses **Supabase OAuth directly** (`supabase.auth.signInWithOAuth`).
+- If Google isn’t enabled in Supabase, the UI will hide the Google button and you can still use email/password.
 
 ---
 
@@ -134,7 +113,7 @@ Create a `.env` file in the project root:
 
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-public-key-here
+VITE_SUPABASE_ANON_KEY=your-anon-public-key-here
 VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
 ```
 
