@@ -4,8 +4,7 @@
 --  - nexus-backups (encrypted backup blobs)
 
 -- NOTE: Buckets must be created in the Supabase dashboard (Storage → Buckets).
-
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- NOTE: RLS is already enabled on storage.objects in hosted Supabase.
 
 -- nexus-profile
 DROP POLICY IF EXISTS "Users manage own encrypted profile photos" ON storage.objects;
@@ -15,11 +14,17 @@ FOR ALL
 TO authenticated
 USING (
   bucket_id = 'nexus-profile'
-  AND owner = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 )
 WITH CHECK (
   bucket_id = 'nexus-profile'
-  AND owner = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 );
 
 -- nexus-backups
@@ -30,9 +35,15 @@ FOR ALL
 TO authenticated
 USING (
   bucket_id = 'nexus-backups'
-  AND owner = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 )
 WITH CHECK (
   bucket_id = 'nexus-backups'
-  AND owner = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 );
