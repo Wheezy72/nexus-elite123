@@ -1,8 +1,14 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { createRequire } from "node:module";
 
 import { VitePWA } from "vite-plugin-pwa";
+
+const require = createRequire(import.meta.url);
+// Avoid deep imports blocked by package "exports".
+// `require.resolve('libsodium-wrappers-sumo')` should point at the CJS entry.
+const sodiumEntry = require.resolve("libsodium-wrappers-sumo");
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
@@ -62,8 +68,8 @@ export default defineConfig(() => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       // Workaround: libsodium-wrappers-sumo ESM build references a missing ./libsodium-sumo.mjs.
-      // Force Vite to use the CJS/UMD build instead.
-      "libsodium-wrappers-sumo": "libsodium-wrappers-sumo/dist/modules-sumo/libsodium-wrappers.js",
+      // Use an absolute path (resolved via CJS) to bypass package "exports" restrictions.
+      "libsodium-wrappers-sumo": sodiumEntry,
     },
   },
 }));
