@@ -11,6 +11,10 @@ import GameToasts from "./components/GameToasts";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Index from "./pages/Index";
+import PlanPage from "./pages/PlanPage";
+import TrackPage from "./pages/TrackPage";
+import InsightsPage from "./pages/InsightsPage";
+import YouPage from "./pages/YouPage";
 import FlowPage from "./pages/FlowPage";
 import TasksPage from "./pages/TasksPage";
 import HabitsPage from "./pages/HabitsPage";
@@ -50,6 +54,10 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/" element={<ProtectedApp><Index /></ProtectedApp>} />
+              <Route path="/plan" element={<ProtectedApp><PlanPage /></ProtectedApp>} />
+              <Route path="/track" element={<ProtectedApp><TrackPage /></ProtectedApp>} />
+              <Route path="/insights" element={<ProtectedApp><InsightsPage /></ProtectedApp>} />
+              <Route path="/you" element={<ProtectedApp><YouPage /></ProtectedApp>} />
               <Route path="/flow" element={<ProtectedApp><FlowPage /></ProtectedApp>} />
               <Route path="/tasks" element={<ProtectedApp><TasksPage /></ProtectedApp>} />
               <Route path="/habits" element={<ProtectedApp><HabitsPage /></ProtectedApp>} />

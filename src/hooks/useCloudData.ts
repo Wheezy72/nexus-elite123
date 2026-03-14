@@ -235,16 +235,75 @@ export function useMood() {
   const addEntry = useMutation({
     mutationFn: async (entry: Omit<MoodEntry, 'id'>) => {
       if (!user) return;
-      const { error } = await supabase.from('mood_entries').insert({
-        user_id: user.id, emoji: entry.emoji, label: entry.label, note: entry.note, triggers: entry.triggers || [],
-      });
+      const { data, error } = await supabase
+        .from('mood_entries')
+        .insert({
+          user_id: user.id,
+          emoji: entry.emoji,
+          label: entry.label,
+          note: entry.note,
+          triggers: entry.triggers || [],
+          date: entry.date,
+        })
+        .select('*')
+        .single();
       if (error) throw error;
       rewardAction('mood_log');
+      return {
+        id: data.id,
+        emoji: data.emoji,
+        label: data.label,
+        note: data.note || '',
+        date: data.date,
+        triggers: data.triggers || [],
+      } as MoodEntry;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['mood'] }),
+    // Optimistic UI update so the timeline/chart updates immediately.
+    onMutate: async (entry) => {
+      if (!user) return;
+      const key = ['mood', user.id] as const;
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<MoodEntry[]>(key);
+
+      const optimistic: MoodEntry = {
+        id: `optimistic-${Date.now()}`,
+        emoji: entry.emoji,
+        label: entry.label,
+        note: entry.note,
+        date: entry.date,
+        triggers: entry.triggers || [],
+      };
+
+      qc.setQueryData<MoodEntry[]>(key, (old = []) => [optimistic, ...old]);
+      return { previous, key };
+    },
+    onError: (_err, _entry, ctx) => {
+      if (!ctx) return;
+      qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSettled: () => {
+      if (!user) return;
+      qc.invalidateQueries({ queryKey: ['mood', user.id] });
+    },
   });
 
-  return { entries, isLoading, addEntry };
+  const updateEntry = useMutation({
+    mutationFn: async ({ id, note, triggers }: { id: string; note: string; triggers: string[] }) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from('mood_entries')
+        .update({ note, triggers })
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      if (!user) return;
+      qc.invalidateQueries({ queryKey: ['mood', user.id] });
+    },
+  });
+
+  return { entries, isLoading, addEntry, updateEntry };
 }
 
 // ==================== SLEEP ====================
@@ -317,11 +376,36 @@ export function useWater() {
       if (!user) return;
       const { error } = await supabase.from('water_logs').upsert(
         { user_id: user.id, date, glasses, goal },
-        { onConflict: 'user_id,date' }
+        { onConflict: 'user_id,date' },
       );
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['water'] }),
+    // Optimistic UI update so the count changes immediately.
+    onMutate: async (vars) => {
+      if (!user) return;
+      const key = ['water', user.id] as const;
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<{ log: Record<string, number>; goal: number }>(key);
+
+      qc.setQueryData<{ log: Record<string, number>; goal: number }>(key, (old) => {
+        const base = old ?? { log: {}, goal: vars.goal };
+        return {
+          log: { ...base.log, [vars.date]: vars.glasses },
+          // store the latest goal for "today" (and keep prior goal otherwise)
+          goal: vars.date === todayKey ? vars.goal : base.goal,
+        };
+      });
+
+      return { previous, key };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSettled: () => {
+      if (!user) return;
+      qc.invalidateQueries({ queryKey: ['water', user.id] });
+    },
   });
 
   return { log: waterData.log, goal: waterData.goal, isLoading, upsertWater, todayKey };
