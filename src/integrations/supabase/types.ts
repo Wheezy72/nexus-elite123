@@ -100,7 +100,7 @@ export type Database = {
           category: string | null
           created_at: string
           id: string
-          limit: number
+          limit_amount: number
           period: string
           updated_at: string
           user_id: string
@@ -110,7 +110,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
-          limit: number
+          limit_amount: number
           period: string
           updated_at?: string
           user_id: string
@@ -120,7 +120,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
-          limit?: number
+          limit_amount?: number
           period?: string
           updated_at?: string
           user_id?: string

@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS public.finance_limits (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   period TEXT NOT NULL CHECK (period IN ('daily','weekly','monthly')),
-  limit NUMERIC(12,2) NOT NULL,
+  limit_amount NUMERIC(12,2) NOT NULL,
   category TEXT,
   warn_at_percent INTEGER NOT NULL DEFAULT 75 CHECK (warn_at_percent BETWEEN 1 AND 100),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
