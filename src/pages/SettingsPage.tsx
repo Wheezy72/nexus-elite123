@@ -27,6 +27,7 @@ const SettingsPage: React.FC = () => {
   const [showNoise, setShowNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
   const [showGrid, setShowGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs, setShowBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
+  const [smartNotifsEnabled, setSmartNotifsEnabled] = useLocalStorage<boolean>('nexus-smart-notifications-enabled', true);
   const [pinEnabled, setPinEnabled] = useState(() => pinLockService.hasPin());
   const [pinMode, setPinMode] = useState<'off' | 'set' | 'change'>('off');
   const [currentPin, setCurrentPin] = useState('');

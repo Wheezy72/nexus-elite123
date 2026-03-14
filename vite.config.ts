@@ -28,6 +28,8 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
+      // We register manually in src/main.tsx so we can disable/unregister SW on localhost.
+      injectRegister: null,
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico"],
       workbox: {
