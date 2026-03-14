@@ -6,8 +6,8 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import fs from "node:fs";
 import path from "node:path";
-import { chatWithAI, getProvider, isAIEnabled, type AIContext } from "./services/aiService";
-import { keywordCategorize, normalizeCategoryName } from "./services/financeCategorizer";
+import { chatWithAI, getProvider, isAIEnabled, type AIContext } from "./services/aiService.js";
+import { keywordCategorize, normalizeCategoryName } from "./services/financeCategorizer.js";
 
 const app = express();
 
