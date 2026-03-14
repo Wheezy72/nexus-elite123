@@ -235,15 +235,28 @@ export function useMood() {
   const addEntry = useMutation({
     mutationFn: async (entry: Omit<MoodEntry, 'id'>) => {
       if (!user) return;
-      const { error } = await supabase.from('mood_entries').insert({
-        user_id: user.id,
-        emoji: entry.emoji,
-        label: entry.label,
-        note: entry.note,
-        triggers: entry.triggers || [],
-      });
+      const { data, error } = await supabase
+        .from('mood_entries')
+        .insert({
+          user_id: user.id,
+          emoji: entry.emoji,
+          label: entry.label,
+          note: entry.note,
+          triggers: entry.triggers || [],
+          date: entry.date,
+        })
+        .select('*')
+        .single();
       if (error) throw error;
       rewardAction('mood_log');
+      return {
+        id: data.id,
+        emoji: data.emoji,
+        label: data.label,
+        note: data.note || '',
+        date: data.date,
+        triggers: data.triggers || [],
+      } as MoodEntry;
     },
     // Optimistic UI update so the timeline/chart updates immediately.
     onMutate: async (entry) => {
@@ -274,7 +287,23 @@ export function useMood() {
     },
   });
 
-  return { entries, isLoading, addEntry };
+  const updateEntry = useMutation({
+    mutationFn: async ({ id, note, triggers }: { id: string; note: string; triggers: string[] }) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from('mood_entries')
+        .update({ note, triggers })
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      if (!user) return;
+      qc.invalidateQueries({ queryKey: ['mood', user.id] });
+    },
+  });
+
+  return { entries, isLoading, addEntry, updateEntry };
 }
 
 // ==================== SLEEP ====================
