@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Nexus Elite",
+    "slug": "nexus-elite",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.nexuselite.mobile",
+      "permissions": []
+    }
+  }
+}

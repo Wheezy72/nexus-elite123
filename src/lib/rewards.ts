@@ -19,6 +19,7 @@ const XP_VALUES = {
   note_create: 5,
   pomodoro_complete: 20,
   gratitude_log: 10,
+  finance_review: 12,
 } as const;
 
 export function rewardAction(action: keyof typeof XP_VALUES) {

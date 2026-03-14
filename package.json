@@ -3,18 +3,30 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "backend"
+  ],
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k \"npm run dev:web\" \"npm run dev:backend\"",
+    "dev:web": "vite",
+    "dev:backend": "npm --workspace backend run dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:prod": "npm run build && npm --workspace backend run build",
+    "start:prod": "npm --workspace backend run start",
+    "prod": "npm run build:prod && npm run start:prod",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@lovable.dev/cloud-auth-js": "^0.0.3",
+    
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -52,6 +64,7 @@
     "framer-motion": "^12.35.1",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
+    "libsodium-wrappers-sumo": "^0.7.15",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
@@ -69,6 +82,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
@@ -83,7 +97,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "jsdom": "^20.0.3",
-    "lovable-tagger": "^1.1.13",
+    
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

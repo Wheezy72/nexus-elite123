@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: nexus-elite
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build:prod
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      # Add the following in Render dashboard as "Secret" values:
+      # - VITE_SUPABASE_URL
+      # - VITE_SUPABASE_ANON_KEY
+      # - VITE_SUPABASE_PROJECT_ID
+      # - AI_PROVIDER (mock/openai/gemini)
+      # - OPENAI_API_KEY (if using openai)
+      # - GEMINI_API_KEY (if using gemini)

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
 
 const AuthPage: React.FC = () => {
@@ -16,14 +15,16 @@ const AuthPage: React.FC = () => {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
       });
-      if (result.error) throw result.error;
+      if (error) throw error;
     } catch (err: any) {
       const msg = err.message || '';
-      // If Google OAuth isn't configured, hide the button gracefully
-      if (msg.toLowerCase().includes('provider') || msg.toLowerCase().includes('oauth') || msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('unsupported')) {
+      if (msg.toLowerCase().includes('provider') || msg.toLowerCase().includes('oauth') || msg.toLowerCase().includes('not enabled')) {
         setGoogleAvailable(false);
         toast.info('Google sign-in not available — use email instead');
       } else {

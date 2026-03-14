@@ -53,6 +53,7 @@ supabase db push
 Go to **Table Editor** (left sidebar) — you should see these tables:
 - `profiles`, `tasks`, `habits`, `habit_logs`, `journal_entries`
 - `mood_entries`, `sleep_entries`, `water_logs`, `notes`, `goals`, `reminders`
+- `finance_transactions`, `finance_budgets`, `finance_categories`, `finance_savings_goals`, `finance_limits`
 
 ---
 
@@ -97,33 +98,12 @@ Nothing to do — it works out of the box.
 3. Paste your **Client ID** and **Client Secret**
 4. Click **Save**
 
-#### C. Update the Code
+#### C. App configuration
 
-The app uses Lovable's managed OAuth by default. For self-hosting, edit `src/pages/AuthPage.tsx`:
+No code changes are required.
 
-**Remove** this import:
-```typescript
-import { lovable } from '@/integrations/lovable/index';
-```
-
-**Replace** the `handleGoogle` function with:
-```typescript
-const handleGoogle = async () => {
-  setLoading(true);
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) throw error;
-  } catch (err: any) {
-    toast.error(err.message || 'Google sign-in failed');
-    setLoading(false);
-  }
-};
-```
-
-> 💡 **Or** just remove the Google button entirely if email/password is enough for you.
+- The app uses **Supabase OAuth directly** (`supabase.auth.signInWithOAuth`).
+- If Google isn’t enabled in Supabase, the UI will hide the Google button and you can still use email/password.
 
 ---
 
@@ -133,17 +113,51 @@ Create a `.env` file in the project root:
 
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-public-key-here
+VITE_SUPABASE_ANON_KEY=your-anon-public-key-here
 VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
 ```
 
 Replace the values with what you copied in Step 1.
 
+### (Optional) Enable real AI responses
+
+The AI gateway runs in **mock mode** by default. To use a real provider, add one of these to the same root `.env` file (Docker Compose reads it automatically):
+
+**OpenAI**
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+```
+
+**Gemini (Google AI Studio)**
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+
+
+### Encrypted profile photo + encrypted backups (Storage buckets)
+
+To use the encrypted profile photo and encrypted backups features, create these Storage buckets in Supabase:
+- `nexus-profile`
+- `nexus-backups`
+
+You can keep them **private** (recommended). Nexus stores only encrypted blobs in these buckets.
+
 ---
 
-## Step 5: Run with Docker
+## Step 5: Run the app
 
-### Prerequisites
+You have two options:
+- **Option A (recommended): Docker** (easiest to run as a LAN "app" on your phone)
+- **Option B: No Docker** (build + run with Node only)
+
+### Option A: Docker
+
+#### Prerequisites
 
 - [Docker Desktop](https://docker.com/products/docker-desktop) installed (Windows, Mac, or Linux)
 - That's it!
@@ -199,6 +213,35 @@ docker-compose logs -f
 # Check if running
 docker-compose ps
 ```
+
+### Option B: No Docker (Windows-friendly)
+
+This runs the backend and serves the built frontend from the same Node server.
+
+1) Install dependencies:
+```bash
+npm install
+```
+
+2) Create env files:
+```bash
+copy .env.example .env
+copy backend\.env.example backend\.env
+```
+
+3) Build + run:
+```bash
+npm run prod
+```
+
+Open:
+- http://localhost:3001
+
+To access on your phone (same Wi‑Fi):
+- find your PC IP (Windows: `ipconfig` → IPv4 Address)
+- open: `http://YOUR_IP:3001`
+
+> Note: for "installable" PWA on phones, HTTPS is usually required. On LAN HTTP you can still use it in the browser.
 
 ---
 

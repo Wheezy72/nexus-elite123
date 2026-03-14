@@ -1,105 +1,100 @@
 # Nexus Elite — Personal Productivity Command Center
 
-A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Lovable Cloud.
+A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Supabase.
 
 ## Features
 
 - 🔐 **Authentication** — Email/password + Google sign-in
-- 👤 **Profiles** — Custom display names & 20 selectable avatars
+- 👤 **Profiles** — Display name, 20 avatars, optional encrypted profile photo
 - ✅ **Task Board** — Kanban with priorities, subtasks, due dates
 - 🎯 **Habit Tracker** — Daily habits with streak tracking
 - 📝 **Journal** — Brain dump with mood tagging
 - 😊 **Mood Tracker** — Log moods with triggers & analytics
 - 😴 **Sleep Tracker** — Bedtime/wake, quality scores, charts
-- 💧 **Water Tracker** — Daily hydration with elastic animations
+- 💧 **Water Tracker** — Daily hydration
 - 📒 **Notes** — Rich notes with categories & search
 - 🎯 **Goals** — Track progress on daily/weekly goals
 - ⏰ **Reminders** — Scheduled with repeat (once/daily/weekly)
-- 🔔 **Notifications** — In-app toasts + browser push
 - ⏱️ **Flow Timer** — Pomodoro-style focus sessions
-- 📊 **Stats** — XP, streaks, and analytics
-- 🎮 **Gamification** — XP bar, rewards, achievements
+- 📊 **Stats** — Pomodoro + focus analytics
+- 📵 **Nexus Focus (Android app)** — Notification listener + focus-mode blocking + distraction analytics (local-only)
+- 📈 **Analytics** — Wellness patterns, trends, correlations (mood/sleep/exercise/tasks)
+- 🎓 **Study Planner** — AI-generated study plans + one-click task creation
+- 💸 **Finance** — Monthly budget + expense tracker
+- 🏆 **Achievements** — Trophy cabinet + level progress
+- 🎮 **Gamification** — Levels 1–50, XP, trophies, animations
 - 🎨 **Customization** — Accent colors, video backgrounds, visual effects
-- ☁️ **Cloud Sync** — All data syncs across devices
+- 🤖 **Nexus AI (beta)** — Local AI gateway (mock by default). Supports OpenAI/Gemini server-side
+- 💾 **Encrypted Backups** — Optional encrypted backup + restore (chat + profile photo)
+- ☁️ **Cloud Sync** — Supabase sync for plaintext wellness data (RLS-protected)
 
 ## Local Development
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18+ (or [Bun](https://bun.sh/))
-- npm, yarn, or bun
+- [Node.js](https://nodejs.org/) v20+
+- npm
 
 ### Getting Started
 
 ```bash
-# 1. Clone the repository
-git clone <your-repo-url>
-cd <project-folder>
-
-# 2. Install dependencies
+# 1. Install dependencies
 npm install
-# or: bun install
 
-# 3. Set up environment variables
-# Create a .env file in the project root:
-cat > .env << EOF
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
-EOF
+# 2. Environment variables
+cp .env.example .env
+cp backend/.env.example backend/.env
 
-# You can find these values in:
-#   Lovable → Cloud tab → Settings
-#   Or your Supabase project → Settings → API
+# .env expects:
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_ANON_KEY
+#   VITE_SUPABASE_PROJECT_ID
 
-# 4. Start the development server
+# 3. (Optional) Encrypted profile photos + encrypted backups
+# Create these Supabase Storage buckets:
+#   - nexus-profile
+#   - nexus-backups
+
+# 4. Start dev
 npm run dev
-# or: bun dev
 
-# 5. Open http://localhost:8080 in your browser
+# Frontend: http://localhost:5173
+# Backend:  http://localhost:3001/api/health
 ```
 
-### Build for Production
+### Run “production mode” without Docker
+
+This builds the frontend and then serves it from the backend Node server (single process).
 
 ```bash
-npm run build
-# Output is in the `dist/` folder
-
-# Preview the build locally:
-npm run preview
+npm run prod
+# Opens: http://localhost:3001
 ```
 
-### Self-Hosting
+### Tests
 
-After building, deploy the `dist/` folder to any static hosting:
+```bash
+npm run test
+npm run type-check
+npm run lint
+```
 
-- **Vercel**: `npx vercel --prod`
-- **Netlify**: Drag & drop `dist/` to Netlify
-- **Nginx**: Point root to `dist/`, add SPA fallback:
-  ```nginx
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-  ```
-- **Docker**:
-  ```dockerfile
-  FROM nginx:alpine
-  COPY dist/ /usr/share/nginx/html/
-  COPY nginx.conf /etc/nginx/conf.d/default.conf
-  EXPOSE 80
-  ```
+## Mobile (Android)
 
-### Tech Stack
+A separate Expo + native module lives in `mobile/`.
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18 + TypeScript |
-| Styling | Tailwind CSS + Framer Motion |
-| UI Components | shadcn/ui + Radix |
-| Backend | Lovable Cloud (Supabase) |
-| Auth | Supabase Auth + Google OAuth |
-| Database | PostgreSQL |
-| Hosting | Lovable / any static host |
-| PWA | vite-plugin-pwa |
+```bash
+cd mobile
+npm install
+npm run android
+```
+
+See `mobile/README.md` for permissions and notes.
+
+## Self-hosting / deployment
+
+- Local/self-host: `SELF_HOSTING.md`
+- Deploy to the internet (recommended for phone + laptop): `DEPLOYMENT.md`
 
 ## License
 

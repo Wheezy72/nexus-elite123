@@ -1,10 +1,11 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* bun.lockb* ./
+COPY backend/package.json backend/package.json
 RUN npm install
 COPY . .
 ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_PUBLISHABLE_KEY
+ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_SUPABASE_PROJECT_ID
 RUN npm run build
 
