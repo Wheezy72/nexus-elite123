@@ -14,11 +14,17 @@ FOR ALL
 TO authenticated
 USING (
   bucket_id = 'nexus-profile'
-  AND owner_id = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 )
 WITH CHECK (
   bucket_id = 'nexus-profile'
-  AND owner_id = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 );
 
 -- nexus-backups
@@ -29,9 +35,15 @@ FOR ALL
 TO authenticated
 USING (
   bucket_id = 'nexus-backups'
-  AND owner_id = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 )
 WITH CHECK (
   bucket_id = 'nexus-backups'
-  AND owner_id = auth.uid()
+  AND (
+    owner::text = auth.uid()::text
+    OR owner_id = auth.uid()::text
+  )
 );
