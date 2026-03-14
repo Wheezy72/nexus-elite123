@@ -61,6 +61,9 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Workaround: libsodium-wrappers-sumo ESM build references a missing ./libsodium-sumo.mjs.
+      // Force Vite to use the CJS/UMD build instead.
+      "libsodium-wrappers-sumo": "libsodium-wrappers-sumo/dist/modules-sumo/libsodium-wrappers.js",
     },
   },
 }));
