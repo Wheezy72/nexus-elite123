@@ -619,7 +619,7 @@ export function useFinanceLimits() {
       return (data || []).map(l => ({
         id: l.id,
         period: l.period as FinanceLimit['period'],
-        limit: Number(l.limit),
+        limit: Number(l.limit_amount),
         category: l.category,
         warnAtPercent: Number(l.warn_at_percent),
       }));
@@ -634,7 +634,7 @@ export function useFinanceLimits() {
         {
           user_id: user.id,
           period: limit.period,
-          limit: limit.limit,
+          limit_amount: limit.limit,
           category: limit.category || null,
           warn_at_percent: limit.warnAtPercent,
         },
