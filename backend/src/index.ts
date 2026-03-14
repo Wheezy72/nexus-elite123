@@ -13,7 +13,31 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "connect-src": [
+          "'self'",
+          "https://*.supabase.co",
+          "wss://*.supabase.co",
+          "https://cdn.jsdelivr.net",
+        ],
+        "img-src": ["'self'", "data:", "blob:", "https://*.supabase.co"],
+        "script-src": [
+          "'self'",
+          "'unsafe-eval'",
+          "'wasm-unsafe-eval'",
+          "https://cdn.jsdelivr.net",
+        ],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "worker-src": ["'self'", "blob:", "https://cdn.jsdelivr.net"],
+      },
+    },
+  }),
+);
 
 const corsOrigin = process.env.CORS_ORIGIN;
 if (corsOrigin) {
