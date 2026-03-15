@@ -589,7 +589,7 @@ export interface FinanceLimit {
 }
 
 function financeCategoriesCacheKey(userId: string) {
-  return `nexus-finance-categories-v1:${userId}`;
+  return `future-finance-categories-v1:${userId}`;
 }
 
 export function useFinanceCategories() {

@@ -30,7 +30,7 @@ export function useInAppReminders(enabled: boolean = true) {
     timers.current = Object.entries(REMINDER_INTERVALS).map(([key, { label, interval }]) =>
       setInterval(() => {
         toast(label, { duration: 8000 });
-        sendBrowserNotification('Nexus Elite', label);
+        sendBrowserNotification('Future', label);
       }, interval)
     );
 

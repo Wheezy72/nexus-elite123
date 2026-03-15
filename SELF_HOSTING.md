@@ -1,6 +1,6 @@
-# Self-Hosting Guide — Nexus Elite
+# Self-Hosting Guide — Future
 
-Run Nexus Elite on your own machine and access it from your phone on the same Wi-Fi network. **Total cost: $0/month.**
+Run Future on your own machine and access it from your phone on the same Wi-Fi network. **Total cost: $0/month.**
 
 ---
 
@@ -9,7 +9,7 @@ Run Nexus Elite on your own machine and access it from your phone on the same Wi
 1. Go to **[supabase.com](https://supabase.com)** → click **Start your project** → sign up with GitHub or email
 2. Once logged in, click **New Project**
    - **Organization**: pick your personal org (created automatically)
-   - **Name**: anything you like (e.g., `nexus-elite`)
+   - **Name**: anything you like (e.g., `future`)
    - **Database Password**: generate a strong one and **save it somewhere** — you'll need it later
    - **Region**: pick the one closest to you
    - Click **Create new project** — takes ~2 minutes to spin up
@@ -71,7 +71,7 @@ Nothing to do — it works out of the box.
 2. Create a new project (or select existing)
 3. Go to **APIs & Services → OAuth consent screen**
    - User type: **External**
-   - App name: `Nexus Elite` (or whatever you like)
+   - App name: `Future` (or whatever you like)
    - Support email: your email
    - Click **Save and continue**
 4. **Scopes** → click **Add or Remove Scopes** → add:
@@ -83,7 +83,7 @@ Nothing to do — it works out of the box.
 6. Go to **APIs & Services → Credentials**
    - Click **Create Credentials → OAuth client ID**
    - Application type: **Web application**
-   - Name: `Nexus Elite`
+   - Name: `Future`
    - **Authorized redirect URIs** → add:
      ```
      https://YOUR_SUPABASE_PROJECT_ID.supabase.co/auth/v1/callback
@@ -142,10 +142,10 @@ GEMINI_MODEL=gemini-2.5-flash
 ### Encrypted profile photo + encrypted backups (Storage buckets)
 
 To use the encrypted profile photo and encrypted backups features, create these Storage buckets in Supabase:
-- `nexus-profile`
-- `nexus-backups`
+- `future-profile`
+- `future-backups`
 
-You can keep them **private** (recommended). Nexus stores only encrypted blobs in these buckets.
+You can keep them **private** (recommended). The app stores only encrypted blobs in these buckets.
 
 ---
 

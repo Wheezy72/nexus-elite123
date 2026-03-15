@@ -23,9 +23,9 @@ const themePresets = [
     },
   },
   {
-    id: 'indigo',
-    name: 'Indigo',
-    desc: 'Classic dark + indigo/violet neon.',
+    id: 'midnight',
+    name: 'Midnight',
+    desc: 'Deep charcoal + clean neon edge.',
     preview: {
       bg: '240 10% 3.9%',
       primary: '226 70% 55.5%',
@@ -34,50 +34,31 @@ const themePresets = [
     },
   },
   {
-    id: 'violet',
-    name: 'Violet',
-    desc: 'Deep violet with bright purple accents.',
+    id: 'ivory',
+    name: 'Ivory',
+    desc: 'Warm paper + deep ink accents.',
     preview: {
-      bg: '260 35% 10%',
-      primary: '270 70% 55%',
-      accent: '300 65% 52%',
-      fg: '0 0% 98%',
-    },
-  },
-  {
-    id: 'cyan',
-    name: 'Cyan',
-    desc: 'Deep navy with cyan glow.',
-    preview: {
-      bg: '210 45% 9%',
-      primary: '190 80% 50%',
-      accent: '200 80% 45%',
-      fg: '0 0% 98%',
-    },
-  },
-  {
-    id: 'rose',
-    name: 'Rose',
-    desc: 'Dark rose with neon pink accents.',
-    preview: {
-      bg: '340 35% 10%',
-      primary: '350 70% 55%',
-      accent: '330 80% 52%',
-      fg: '0 0% 98%',
+      bg: '40 40% 96%',
+      primary: '156 58% 18%',
+      accent: '28 80% 45%',
+      fg: '156 38% 10%',
     },
   },
 ] as const;
 
 const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
-  const [videoBg, setVideoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
-  const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('nexus-video-enabled', true);
-  const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('nexus-video-opacity', 15);
-  const [theme, setTheme] = useLocalStorage<string>('nexus-theme', 'forest');
-  const [showNoise, setShowNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
-  const [showGrid, setShowGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
-  const [showBlobs, setShowBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
-  const [smartNotifsEnabled, setSmartNotifsEnabled] = useLocalStorage<boolean>('nexus-smart-notifications-enabled', true);
+  const [videoBg, setVideoBg] = useLocalStorage<string | null>('future-video-bg', null);
+  const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('future-video-enabled', true);
+  const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('future-video-opacity', 15);
+
+  const [bgStyle, setBgStyle] = useLocalStorage<'aura' | 'static' | 'video'>('future-bg-style', 'aura');
+  const [theme, setTheme] = useLocalStorage<string>('future-theme', 'forest');
+  const [showAura, setShowAura] = useLocalStorage<boolean>('future-show-aura', true);
+  const [showNoise, setShowNoise] = useLocalStorage<boolean>('future-show-noise', false);
+  const [showGrid, setShowGrid] = useLocalStorage<boolean>('future-show-grid', false);
+
+  const [smartNotifsEnabled, setSmartNotifsEnabled] = useLocalStorage<boolean>('future-smart-notifications-enabled', true);
   const [pinEnabled, setPinEnabled] = useState(() => pinLockService.hasPin());
   const [pinMode, setPinMode] = useState<'off' | 'set' | 'change'>('off');
   const [currentPin, setCurrentPin] = useState('');
@@ -94,6 +75,7 @@ const SettingsPage: React.FC = () => {
     reader.onload = () => {
       setVideoBg(reader.result as string);
       setVideoEnabled(true);
+      setBgStyle('video');
     };
     reader.readAsDataURL(file);
   };
@@ -101,13 +83,11 @@ const SettingsPage: React.FC = () => {
   const applyTheme = (id: string) => {
     setTheme(id);
     document.documentElement.setAttribute('data-theme', id);
-    // Back-compat: if older installs set a custom accent, clear it so presets stay consistent.
-    localStorage.removeItem('nexus-accent-color');
   };
 
   const resetAll = () => {
     if (!confirm('This will clear ALL app data. Are you sure?')) return;
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('nexus-'));
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('future-') || k.startsWith('future'));
     keys.forEach(k => localStorage.removeItem(k));
     window.location.reload();
   };
@@ -121,7 +101,7 @@ const SettingsPage: React.FC = () => {
 
       if (pinEnabled) {
         await pinLockService.unlock(currentPin);
-        localStorage.removeItem('nexus-chat-history');
+        localStorage.removeItem('future-chat-history');
         await pinLockService.setPin(newPin);
         toast.success('PIN updated');
       } else {
@@ -198,15 +178,7 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  React.useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  React.useEffect(() => {
-    document.documentElement.setAttribute('data-noise', showNoise ? '1' : '0');
-    document.documentElement.setAttribute('data-grid', showGrid ? '1' : '0');
-    document.documentElement.setAttribute('data-blobs', showBlobs ? '1' : '0');
-  }, [showNoise, showGrid, showBlobs]);
+  
 
   React.useEffect(() => {
     refreshBackups();
@@ -240,7 +212,7 @@ const SettingsPage: React.FC = () => {
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => { setVideoBg(null); setVideoEnabled(false); }}
+                      onClick={() => { setVideoBg(null); setVideoEnabled(false); setBgStyle('aura'); }}
                       className="p-2 rounded-xl glass text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -330,10 +302,37 @@ const SettingsPage: React.FC = () => {
               <h3 className="text-sm font-semibold text-foreground">Visual Effects</h3>
             </div>
             <div className="space-y-3">
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-foreground">Background style</span>
+                </div>
+                <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/[0.08] p-1">
+                  {([
+                    { id: 'aura', label: 'Aura' },
+                    { id: 'static', label: 'Static' },
+                    { id: 'video', label: 'Video' },
+                  ] as const).map(opt => {
+                    const active = bgStyle === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => setBgStyle(opt.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                          active ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {[
-                { label: 'Noise Texture', icon: Sparkles, value: showNoise, set: setShowNoise },
-                { label: 'Grid Overlay', icon: Grid3X3, value: showGrid, set: setShowGrid },
-                { label: 'Aurora Blobs', icon: Sparkles, value: showBlobs, set: setShowBlobs },
+                { label: 'Aura', icon: Sparkles, value: showAura, set: setShowAura },
+                { label: 'Noise texture', icon: Sparkles, value: showNoise, set: setShowNoise },
+                { label: 'Grid overlay', icon: Grid3X3, value: showGrid, set: setShowGrid },
               ].map(pref => (
                 <div key={pref.label} className="flex items-center justify-between py-1">
                   <div className="flex items-center gap-2">
@@ -422,7 +421,7 @@ const SettingsPage: React.FC = () => {
             {!pinEnabled ? (
               <>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Add a quick PIN lock on this device. You\'ll unlock Nexus with 4–12 digits.
+                  Add a quick PIN lock on this device. You'll unlock Future with 4–12 digits.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
@@ -557,9 +556,9 @@ const SettingsPage: React.FC = () => {
               <p className="text-[11px] text-muted-foreground">No backups found yet.</p>
             )}
 
-            <p className="text-[10px] text-muted-foreground mt-3">
-              Requires Storage buckets: <span className="font-medium">nexus-backups</span> and <span className="font-medium">nexus-profile</span>.
-            </p>
+            <p className="text-[10px] text-muted-foreground">
+                Requires Storage buckets: <span className="font-medium">future-backups</span> and <span className="font-medium">future-profile</span>.
+              </p>
           </GlassCard>
         </motion.div>
 

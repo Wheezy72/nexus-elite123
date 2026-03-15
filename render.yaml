@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: nexus-elite
+    name: future
     runtime: node
     plan: free
     buildCommand: npm install && npm run build:prod

@@ -284,5 +284,5 @@ if (fs.existsSync(frontendIndex)) {
 const port = Number(process.env.PORT || 3001);
 app.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Nexus Elite running on http://localhost:${port}`);
+  console.log(`Future running on http://localhost:${port}`);
 });

@@ -20,7 +20,7 @@ const moods = [
 ];
 
 const MoodPatterns: React.FC = () => {
-  const [entries] = useLocalStorage<MoodEntry[]>('nexus-mood-entries', []);
+  const [entries] = useLocalStorage<MoodEntry[]>('future-mood-entries', []);
 
   // Last 30 days
   const recent = entries.filter(e => {

@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Nexus Elite",
-    "slug": "nexus-elite",
+    "name": "Future",
+    "slug": "future",
     "version": "0.0.1",
     "orientation": "portrait",
     "platforms": ["android"],
     "android": {
-      "package": "com.nexuselite.mobile",
+      "package": "com.future.mobile",
       "permissions": []
     }
   }

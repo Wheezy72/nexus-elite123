@@ -9,7 +9,7 @@ import GlassCard from './GlassCard';
 
 const DailyPlanner: React.FC = () => {
   const { tasks } = useTasks();
-  const [priorities, setPriorities] = useLocalStorage<string[]>('nexus-daily-priorities', []);
+  const [priorities, setPriorities] = useLocalStorage<string[]>('future-daily-priorities', []);
 
   const incompleteTasks = tasks.filter(t => t.column !== 'done');
   const topTask = incompleteTasks.find(t => t.priority === 'high') || incompleteTasks[0];

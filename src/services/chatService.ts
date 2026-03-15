@@ -13,7 +13,7 @@ export interface ChatMessage {
   };
 }
 
-const STORAGE_KEY = 'nexus-chat-history';
+const STORAGE_KEY = 'future-chat-history';
 
 type StoredChatBlob =
   | { v: 1; encrypted: true; payload: { ivB64: string; ciphertextB64: string } }

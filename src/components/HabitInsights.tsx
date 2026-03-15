@@ -23,8 +23,8 @@ const MOTIVATIONAL_NUDGES = [
 ];
 
 const HabitInsights: React.FC = () => {
-  const [habits] = useLocalStorage<Habit[]>('nexus-habits', []);
-  const [log] = useLocalStorage<HabitLog>('nexus-habit-log', {});
+  const [habits] = useLocalStorage<Habit[]>('future-habits', []);
+  const [log] = useLocalStorage<HabitLog>('future-habit-log', {});
 
   // Get last 7 days keys
   const last7Days = Array.from({ length: 7 }, (_, i) => {

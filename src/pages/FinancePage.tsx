@@ -902,7 +902,7 @@ const FinancePage: React.FC = () => {
                         onClick={() => {
                           if (!filteredTransactions.length) return;
                           downloadCsv(
-                            `nexus-finance-${month}.csv`,
+                            `future-finance-${month}.csv`,
                             filteredTransactions.map(t => ({
                               date: t.date,
                               amount: t.amount,

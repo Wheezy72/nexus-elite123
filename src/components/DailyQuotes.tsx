@@ -35,8 +35,8 @@ function getDayIndex() {
 }
 
 const DailyQuotes: React.FC = () => {
-  const [favorites, setFavorites] = useLocalStorage<number[]>('nexus-fav-quotes', []);
-  const [extraIndex, setExtraIndex] = useLocalStorage<number | null>('nexus-quote-extra', null);
+  const [favorites, setFavorites] = useLocalStorage<number[]>('future-fav-quotes', []);
+  const [extraIndex, setExtraIndex] = useLocalStorage<number | null>('future-quote-extra', null);
 
   const index = extraIndex !== null ? extraIndex : getDayIndex();
   const quote = QUOTES[index];

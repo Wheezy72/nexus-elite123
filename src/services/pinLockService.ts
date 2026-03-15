@@ -1,9 +1,9 @@
 import { decryptString, deriveKeyFromPin, encryptString, fromBase64, toBase64, type EncryptedPayload } from '@/lib/encryption';
 
-const PIN_STORAGE_KEY = 'nexus-pin-lock';
-const VAULT_KEY_STORAGE_KEY = 'nexus-vault-key-b64';
-const PIN_VERIFIER_TEXT_V1 = 'nexus-pin-verifier:v1';
-const PIN_VERIFIER_TEXT_V2 = 'nexus-pin-verifier:v2';
+const PIN_STORAGE_KEY = 'future-pin-lock';
+const VAULT_KEY_STORAGE_KEY = 'future-vault-key-b64';
+const PIN_VERIFIER_TEXT_V1 = 'future-pin-verifier:v1';
+const PIN_VERIFIER_TEXT_V2 = 'future-pin-verifier:v2';
 
 interface PinLockRecord {
   saltB64: string;
