@@ -41,9 +41,14 @@
     --sidebar-accent-foreground: 42 35% 92%;
     --sidebar-border: 156 22% 18%;
     --sidebar-ring: 145 72% 46%;
+
+    /* Glass tint (separate from text so light theme still looks premium) */
+    --glass: 42 35% 92%;
+    --glass-border: 42 35% 92%;
   }
 
   /* Theme presets (full palette). Set by documentElement[data-theme]. */
+  :root[data-theme='midnight'],
   :root[data-theme='indigo'] {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -75,105 +80,45 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 226 70% 55.5%;
+
+    --glass: 0 0% 98%;
+    --glass-border: 0 0% 98%;
   }
 
-  :root[data-theme='violet'] {
-    --background: 260 35% 10%;
-    --foreground: 0 0% 98%;
-    --card: 260 32% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 260 32% 12%;
-    --popover-foreground: 0 0% 98%;
+  :root[data-theme='ivory'] {
+    --background: 40 35% 96%;
+    --foreground: 156 30% 12%;
+    --card: 40 25% 98%;
+    --card-foreground: 156 30% 12%;
+    --popover: 40 25% 98%;
+    --popover-foreground: 156 30% 12%;
 
-    --primary: 270 70% 55%;
+    --primary: 145 55% 35%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 260 20% 18%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 260 20% 18%;
-    --muted-foreground: 260 10% 70%;
+    --secondary: 40 25% 92%;
+    --secondary-foreground: 156 30% 12%;
+    --muted: 40 25% 92%;
+    --muted-foreground: 156 10% 35%;
 
-    --accent: 300 65% 52%;
+    --accent: 160 45% 28%;
     --accent-foreground: 0 0% 98%;
 
-    --border: 260 18% 22%;
-    --input: 260 18% 22%;
-    --ring: 270 70% 55%;
+    --border: 156 10% 80%;
+    --input: 156 10% 80%;
+    --ring: 145 55% 35%;
 
-    --sidebar-background: 260 35% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 270 70% 55%;
+    --sidebar-background: 40 35% 96%;
+    --sidebar-foreground: 156 30% 12%;
+    --sidebar-primary: 145 55% 35%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 260 20% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 260 18% 22%;
-    --sidebar-ring: 270 70% 55%;
-  }
+    --sidebar-accent: 40 25% 92%;
+    --sidebar-accent-foreground: 156 30% 12%;
+    --sidebar-border: 156 10% 80%;
+    --sidebar-ring: 145 55% 35%;
 
-  :root[data-theme='cyan'] {
-    --background: 210 45% 9%;
-    --foreground: 0 0% 98%;
-    --card: 210 40% 11%;
-    --card-foreground: 0 0% 98%;
-    --popover: 210 40% 11%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 190 80% 50%;
-    --primary-foreground: 0 0% 98%;
-
-    --secondary: 210 22% 16%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 210 22% 16%;
-    --muted-foreground: 210 10% 70%;
-
-    --accent: 200 80% 45%;
-    --accent-foreground: 0 0% 98%;
-
-    --border: 210 18% 20%;
-    --input: 210 18% 20%;
-    --ring: 190 80% 50%;
-
-    --sidebar-background: 210 45% 9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 190 80% 50%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 210 22% 16%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 210 18% 20%;
-    --sidebar-ring: 190 80% 50%;
-  }
-
-  :root[data-theme='rose'] {
-    --background: 340 35% 10%;
-    --foreground: 0 0% 98%;
-    --card: 340 28% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 340 28% 12%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 350 70% 55%;
-    --primary-foreground: 0 0% 98%;
-
-    --secondary: 340 18% 18%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 340 18% 18%;
-    --muted-foreground: 340 10% 70%;
-
-    --accent: 330 80% 52%;
-    --accent-foreground: 0 0% 98%;
-
-    --border: 340 16% 22%;
-    --input: 340 16% 22%;
-    --ring: 350 70% 55%;
-
-    --sidebar-background: 340 35% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 350 70% 55%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 340 18% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 340 16% 22%;
-    --sidebar-ring: 350 70% 55%;
+    --glass: 0 0% 100%;
+    --glass-border: 156 30% 12%;
   }
 }
 
@@ -388,26 +333,25 @@
 
 /* Glass card - premium liquid glass */
 .glass {
-  /* Theme-aware glass: tint follows --foreground (warm cream in the green theme) */
-  background: hsl(var(--foreground) / 0.045);
+  background: hsl(var(--glass) / 0.05);
   backdrop-filter: blur(64px) saturate(180%);
   -webkit-backdrop-filter: blur(64px) saturate(180%);
-  border: 1px solid hsl(var(--foreground) / 0.10);
+  border: 1px solid hsl(var(--glass-border) / 0.12);
 }
 
 .glass-card-premium {
-  background: hsl(var(--foreground) / 0.045);
+  background: hsl(var(--glass) / 0.05);
   backdrop-filter: blur(64px) saturate(180%);
   -webkit-backdrop-filter: blur(64px) saturate(180%);
-  border: 1px solid hsl(var(--foreground) / 0.10);
+  border: 1px solid hsl(var(--glass-border) / 0.12);
   transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
 }
 .glass-card-premium:hover {
-  border-color: hsl(var(--foreground) / 0.16);
+  border-color: hsl(var(--glass-border) / 0.18);
   box-shadow:
     0 0 40px hsl(var(--primary) / 0.10),
     0 8px 32px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 hsl(var(--foreground) / 0.06);
+    inset 0 1px 0 hsl(var(--glass-border) / 0.08);
 }
 
 /* Ambient glow utilities */
@@ -434,19 +378,19 @@ h1, h2, h3 {
 
 /* Navbar glass - premium */
 .glass-nav-premium {
-  background: hsl(var(--foreground) / 0.028);
+  background: hsl(var(--glass) / 0.03);
   backdrop-filter: blur(64px) saturate(200%);
   -webkit-backdrop-filter: blur(64px) saturate(200%);
-  border-bottom: 1px solid hsl(var(--foreground) / 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 hsl(var(--foreground) / 0.04);
+  border-bottom: 1px solid hsl(var(--glass-border) / 0.10);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 hsl(var(--glass-border) / 0.05);
 }
 
 /* Legacy nav glass */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.03);
+  background: hsl(var(--glass) / 0.03);
   backdrop-filter: blur(50px) saturate(180%);
   -webkit-backdrop-filter: blur(50px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid hsl(var(--glass-border) / 0.08);
 }
 
 /* Vision shimmer */
