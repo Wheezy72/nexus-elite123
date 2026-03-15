@@ -79,7 +79,7 @@ const menuSections: Array<{ title: string; items: NavItem[] }> = [
     title: 'You',
     items: [
       { to: '/profile', label: 'Profile', icon: User },
-      { to: '/finance', label: 'Finance', icon: DollarSigninance', label: 'Finance', icon: DollarSign },
+      { to: '/finance', label: 'Finance', icon: DollarSign },
       { to: '/settings', label: 'Settings', icon: Settings },
     ],
   },

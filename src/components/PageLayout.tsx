@@ -34,6 +34,15 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
   const [showNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
   const [showGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
+  const [accentColor] = useLocalStorage<string>('nexus-accent-color', '145 72% 46%');
+
+  // Ensure accent color applies globally (not only after visiting Settings).
+  useEffect(() => {
+    document.documentElement.style.setProperty('--primary', accentColor);
+    document.documentElement.style.setProperty('--ring', accentColor);
+    document.documentElement.style.setProperty('--sidebar-primary', accentColor);
+    document.documentElement.style.setProperty('--sidebar-ring', accentColor);
+  }, [accentColor]);
 
   const { scrollY } = useScroll();
   // Parallax: blobs move at different rates as user scrolls

@@ -11,6 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const accentColors = [
+  // Default palette for the "forest premium" theme.
+  { name: 'Forest', hsl: '145 72% 46%', preview: 'bg-emerald-500' },
   { name: 'Indigo', hsl: '226 70% 55.5%', preview: 'bg-indigo-500' },
   { name: 'Violet', hsl: '270 70% 55%', preview: 'bg-violet-500' },
   { name: 'Cyan', hsl: '190 80% 50%', preview: 'bg-cyan-500' },
@@ -23,7 +25,7 @@ const SettingsPage: React.FC = () => {
   const [videoBg, setVideoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
   const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('nexus-video-enabled', true);
   const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('nexus-video-opacity', 15);
-  const [accentColor, setAccentColor] = useLocalStorage<string>('nexus-accent-color', '226 70% 55.5%');
+  const [accentColor, setAccentColor] = useLocalStorage<string>('nexus-accent-color', '145 72% 46%');
   const [showNoise, setShowNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
   const [showGrid, setShowGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs, setShowBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
@@ -150,9 +152,11 @@ const SettingsPage: React.FC = () => {
   };
 
   React.useEffect(() => {
-    if (accentColor !== '226 70% 55.5%') {
+    if (accentColor !== '145 72% 46%') {
       document.documentElement.style.setProperty('--primary', accentColor);
       document.documentElement.style.setProperty('--ring', accentColor);
+      document.documentElement.style.setProperty('--sidebar-primary', accentColor);
+      document.documentElement.style.setProperty('--sidebar-ring', accentColor);
     }
   }, [accentColor]);
 
