@@ -270,7 +270,7 @@ const TaskBoard: React.FC = () => {
                             exit="exit"
                             className={`glass rounded-lg p-2.5 group border-l-2 ${priorityInfo?.border} ${
                               isOverdue ? 'shadow-[0_0_12px_rgba(239,68,68,0.15)]' : ''
-                            } hover:shadow-[0_0_15px_rgba(99,102,241,0.08)] transition-shadow`}
+                            } hover:shadow-[0_0_15px_hsl(var(--primary)_/_0.10)] transition-shadow`}
                           >
                             <div className="flex items-start gap-2">
                               {next && (

@@ -271,7 +271,7 @@ const ProfilePage: React.FC = () => {
                   onClick={() => setSelectedAvatar(avatar.id)}
                   className={`relative w-full aspect-square rounded-xl bg-gradient-to-br ${avatar.bg} border flex items-center justify-center text-xl transition-all ${
                     selectedAvatar === avatar.id
-                      ? 'border-primary ring-2 ring-primary/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                      ? 'border-primary ring-2 ring-primary/30 shadow-[0_0_15px_hsl(var(--primary)_/_0.22)]'
                       : 'border-white/[0.06] opacity-60 hover:opacity-100'
                   }`}
                 >

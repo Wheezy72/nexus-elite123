@@ -117,7 +117,7 @@ const BrainDump: React.FC = () => {
                     whileHover={{ scale: 1.15 }}
                     onClick={() => setMood(mood === i + 1 ? null : i + 1)}
                     className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
-                      mood === i + 1 ? 'bg-primary/20 shadow-[0_0_12px_rgba(99,102,241,0.2)]' : 'hover:bg-accent/20'
+                      mood === i + 1 ? 'bg-primary/20 shadow-[0_0_12px_hsl(var(--primary)_/_0.22)]' : 'hover:bg-accent/20'
                     }`}
                   >
                     <Icon className={`w-4 h-4 transition-colors ${mood === i + 1 ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -184,7 +184,7 @@ const BrainDump: React.FC = () => {
                 key={entry.id}
                 variants={listItem}
                 layout
-                className={`glass rounded-xl p-3 group relative border-l-2 ${borderClass} hover:shadow-[0_0_20px_rgba(99,102,241,0.05)] transition-shadow`}
+                className={`glass rounded-xl p-3 group relative border-l-2 ${borderClass} hover:shadow-[0_0_20px_hsl(var(--primary)_/_0.08)] transition-shadow`}
               >
                 <button onClick={() => handleDelete(entry.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
