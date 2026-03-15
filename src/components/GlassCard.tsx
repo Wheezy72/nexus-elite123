@@ -9,18 +9,21 @@ interface GlassCardProps {
   magnetic?: boolean;
 }
 
+const TILT_DEG = 3;
+const MAGNET_PX = 4;
+
 const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', tilt = true, glow = null, magnetic = true }) => {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  // Tilt
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 30 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 30 });
+  // Tilt (kept subtle — heavy tilt feels "wobbly" and is harder to read)
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [TILT_DEG, -TILT_DEG]), { stiffness: 180, damping: 28 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-TILT_DEG, TILT_DEG]), { stiffness: 180, damping: 28 });
 
-  // Magnetic pull — card shifts toward cursor
-  const magnetX = useSpring(useTransform(x, [-0.5, 0.5], [-8, 8]), { stiffness: 150, damping: 20 });
-  const magnetY = useSpring(useTransform(y, [-0.5, 0.5], [-8, 8]), { stiffness: 150, damping: 20 });
+  // Magnetic pull — card shifts slightly toward cursor
+  const magnetX = useSpring(useTransform(x, [-0.5, 0.5], [-MAGNET_PX, MAGNET_PX]), { stiffness: 140, damping: 22 });
+  const magnetY = useSpring(useTransform(y, [-0.5, 0.5], [-MAGNET_PX, MAGNET_PX]), { stiffness: 140, damping: 22 });
 
   // Spotlight gradient position
   const spotlightX = useTransform(x, [-0.5, 0.5], [0, 100]);
