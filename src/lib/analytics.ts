@@ -163,3 +163,90 @@ export function calculateCorrelations(history: BehaviorEntry[]) {
 
   return correlations.sort((a, b) => Math.abs(b.strength) - Math.abs(a.strength));
 }
+
+export interface ActionableInsight {
+  id: string;
+  title: string;
+  detail: string;
+  level: 'good' | 'warn';
+}
+
+export function calculateActionableInsights(history: BehaviorEntry[]): ActionableInsight[] {
+  if (!history.length) return [];
+
+  const insights: ActionableInsight[] = [];
+
+  const moodVals = history.map(h => h.mood).filter((x): x is number => typeof x === 'number');
+  const sleepVals = history.map(h => h.sleepHours).filter((x): x is number => typeof x === 'number');
+  const tasksDone = history.map(h => h.tasksDone || 0);
+
+  const avgSleep = average(sleepVals);
+  if (sleepVals.length >= 5) {
+    if (avgSleep >= 7) {
+      insights.push({
+        id: 'sleep-good',
+        title: 'Sleep looks solid',
+        detail: `You averaged ${avgSleep.toFixed(1)}h. Keep protecting that window.`,
+        level: 'good',
+      });
+    } else {
+      const deficit = 7 - avgSleep;
+      insights.push({
+        id: 'sleep-warn',
+        title: 'Sleep is likely costing you energy',
+        detail: `Average sleep is ${avgSleep.toFixed(1)}h (~${deficit.toFixed(1)}h below 7h). Try a consistent wind-down + earlier cut-off.`,
+        level: 'warn',
+      });
+    }
+  }
+
+  const activeDays = history.filter(h => (h.tasksDone || 0) > 0 || (h.journalCount || 0) > 0 || typeof h.mood === 'number').length;
+  const consistency = history.length ? Math.round((activeDays / history.length) * 100) : 0;
+  if (history.length >= 7) {
+    insights.push({
+      id: 'consistency',
+      title: 'Consistency (active days)',
+      detail: `${activeDays}/${history.length} days logged activity (~${consistency}%).`,
+      level: consistency >= 65 ? 'good' : 'warn',
+    });
+  }
+
+  const avgTasks = average(tasksDone);
+  if (history.length >= 7) {
+    if (avgTasks >= 2) {
+      insights.push({
+        id: 'tasks-good',
+        title: 'Task momentum is healthy',
+        detail: `You complete ~${avgTasks.toFixed(1)} tasks/day on average.`,
+        level: 'good',
+      });
+    } else {
+      insights.push({
+        id: 'tasks-warn',
+        title: 'Task momentum is low',
+        detail: `You’re averaging ~${avgTasks.toFixed(1)} tasks/day. Try one “must-do” + two “nice-to-do” tasks daily.`,
+        level: 'warn',
+      });
+    }
+  }
+
+  if (moodVals.length >= 5) {
+    const moodVar = variance(moodVals);
+    const stability = 100 - clamp01(moodVar / 2) * 100;
+    if (stability < 70) {
+      insights.push({
+        id: 'mood-swings',
+        title: 'Mood swings are elevated',
+        detail: `Mood stability is ~${Math.round(stability)}%. Logging sleep + exercise for a week helps pinpoint triggers.`,
+        level: 'warn',
+      });
+    }
+  }
+
+  // Keep the UI tight: return up to 4 items.
+  const unique = new Map<string, ActionableInsight>();
+  for (const it of insights) unique.set(it.id, it);
+  const ordered = Array.from(unique.values());
+  const warnFirst = ordered.sort((a, b) => (a.level === b.level ? 0 : a.level === 'warn' ? -1 : 1));
+  return warnFirst.slice(0, 4);
+}

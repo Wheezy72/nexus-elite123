@@ -111,7 +111,7 @@ const SleepTracker: React.FC = () => {
                       whileHover={{ scale: 1.08 }}
                       onClick={() => setQuality(i + 1)}
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
-                        quality === i + 1 ? `bg-primary/20 ${qualityColors[i]} shadow-[0_0_10px_rgba(99,102,241,0.15)]` : 'glass text-muted-foreground/60'
+                        quality === i + 1 ? `bg-primary/20 ${qualityColors[i]} shadow-[0_0_10px_hsl(var(--primary)_/_0.18)]` : 'glass text-muted-foreground/60'
                       }`}
                     >
                       {label}

@@ -10,20 +10,70 @@ import { notificationService } from '@/services/notificationService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-const accentColors = [
-  { name: 'Indigo', hsl: '226 70% 55.5%', preview: 'bg-indigo-500' },
-  { name: 'Violet', hsl: '270 70% 55%', preview: 'bg-violet-500' },
-  { name: 'Cyan', hsl: '190 80% 50%', preview: 'bg-cyan-500' },
-  { name: 'Rose', hsl: '350 70% 55%', preview: 'bg-rose-500' },
-  { name: 'Emerald', hsl: '160 70% 45%', preview: 'bg-emerald-500' },
-];
+const themePresets = [
+  {
+    id: 'forest',
+    name: 'Forest',
+    desc: 'Deep green + warm cream + neon emerald.',
+    preview: {
+      bg: '156 58% 8%',
+      primary: '145 72% 46%',
+      accent: '160 65% 34%',
+      fg: '42 35% 92%',
+    },
+  },
+  {
+    id: 'indigo',
+    name: 'Indigo',
+    desc: 'Classic dark + indigo/violet neon.',
+    preview: {
+      bg: '240 10% 3.9%',
+      primary: '226 70% 55.5%',
+      accent: '280 60% 55%',
+      fg: '0 0% 98%',
+    },
+  },
+  {
+    id: 'violet',
+    name: 'Violet',
+    desc: 'Deep violet with bright purple accents.',
+    preview: {
+      bg: '260 35% 10%',
+      primary: '270 70% 55%',
+      accent: '300 65% 52%',
+      fg: '0 0% 98%',
+    },
+  },
+  {
+    id: 'cyan',
+    name: 'Cyan',
+    desc: 'Deep navy with cyan glow.',
+    preview: {
+      bg: '210 45% 9%',
+      primary: '190 80% 50%',
+      accent: '200 80% 45%',
+      fg: '0 0% 98%',
+    },
+  },
+  {
+    id: 'rose',
+    name: 'Rose',
+    desc: 'Dark rose with neon pink accents.',
+    preview: {
+      bg: '340 35% 10%',
+      primary: '350 70% 55%',
+      accent: '330 80% 52%',
+      fg: '0 0% 98%',
+    },
+  },
+] as const;
 
 const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
   const [videoBg, setVideoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
   const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('nexus-video-enabled', true);
   const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('nexus-video-opacity', 15);
-  const [accentColor, setAccentColor] = useLocalStorage<string>('nexus-accent-color', '226 70% 55.5%');
+  const [theme, setTheme] = useLocalStorage<string>('nexus-theme', 'forest');
   const [showNoise, setShowNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
   const [showGrid, setShowGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs, setShowBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
@@ -48,12 +98,11 @@ const SettingsPage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const applyAccent = (hsl: string) => {
-    setAccentColor(hsl);
-    document.documentElement.style.setProperty('--primary', hsl);
-    document.documentElement.style.setProperty('--ring', hsl);
-    document.documentElement.style.setProperty('--sidebar-primary', hsl);
-    document.documentElement.style.setProperty('--sidebar-ring', hsl);
+  const applyTheme = (id: string) => {
+    setTheme(id);
+    document.documentElement.setAttribute('data-theme', id);
+    // Back-compat: if older installs set a custom accent, clear it so presets stay consistent.
+    localStorage.removeItem('nexus-accent-color');
   };
 
   const resetAll = () => {
@@ -150,11 +199,8 @@ const SettingsPage: React.FC = () => {
   };
 
   React.useEffect(() => {
-    if (accentColor !== '226 70% 55.5%') {
-      document.documentElement.style.setProperty('--primary', accentColor);
-      document.documentElement.style.setProperty('--ring', accentColor);
-    }
-  }, [accentColor]);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-noise', showNoise ? '1' : '0');
@@ -230,30 +276,48 @@ const SettingsPage: React.FC = () => {
           </GlassCard>
         </motion.div>
 
-        {/* Accent Color */}
+        {/* Theme Preset */}
         <motion.div variants={staggerItem}>
           <GlassCard className="p-5" tilt={false}>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-2">
               <Palette className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Accent Color</h3>
+              <h3 className="text-sm font-semibold text-foreground">Theme</h3>
             </div>
-            <div className="flex gap-3">
-              {accentColors.map(c => (
-                <motion.button
-                  key={c.name}
-                  whileTap={{ scale: 0.9 }}
-                  whileHover={{ scale: 1.1 }}
-                  onClick={() => applyAccent(c.hsl)}
-                  className="flex flex-col items-center gap-1.5"
-                >
-                  <div className={`w-10 h-10 rounded-2xl ${c.preview} transition-all ${
-                    accentColor === c.hsl
-                      ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background glow-primary'
-                      : 'opacity-60 hover:opacity-100'
-                  }`} />
-                  <span className="text-[10px] text-muted-foreground">{c.name}</span>
-                </motion.button>
-              ))}
+            <p className="text-xs text-muted-foreground mb-4">
+              Switch the full palette (background, surfaces, text, charts). This keeps the app looking consistent.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {themePresets.map(p => {
+                const active = theme === p.id;
+                return (
+                  <motion.button
+                    key={p.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => applyTheme(p.id)}
+                    className={`text-left p-4 rounded-3xl border transition-colors ${
+                      active ? 'border-primary/40 bg-primary/10' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{p.desc}</p>
+                      </div>
+                      <div
+                        className={`w-12 h-12 rounded-2xl border ${active ? 'border-primary/40' : 'border-white/[0.10]'}`}
+                        style={{
+                          background: `radial-gradient(circle at 30% 30%, hsl(${p.preview.primary}) 0%, hsl(${p.preview.accent}) 35%, hsl(${p.preview.bg}) 100%)`,
+                        }}
+                      />
+                    </div>
+
+                    {active && (
+                      <div className="mt-3 text-[10px] text-primary font-semibold">Active</div>
+                    )}
+                  </motion.button>
+                );
+              })}
             </div>
           </GlassCard>
         </motion.div>

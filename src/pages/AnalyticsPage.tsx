@@ -5,7 +5,7 @@ import { Activity, Brain, Flame, TrendingUp, Target, HeartPulse } from 'lucide-r
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import { behaviorHistoryService } from '@/services/behaviorHistoryService';
-import { calculateAnalytics, calculateCorrelations, calculateTrends } from '@/lib/analytics';
+import { calculateActionableInsights, calculateAnalytics, calculateCorrelations, calculateTrends } from '@/lib/analytics';
 
 const MetricCard = ({
   title,
@@ -51,6 +51,7 @@ const AnalyticsPage: React.FC = () => {
   const analytics = useMemo(() => calculateAnalytics(history), [history]);
   const trends = useMemo(() => calculateTrends(history), [history]);
   const correlations = useMemo(() => calculateCorrelations(history), [history]);
+  const actionable = useMemo(() => calculateActionableInsights(history), [history]);
 
   return (
     <PageLayout>
@@ -96,6 +97,27 @@ const AnalyticsPage: React.FC = () => {
             </p>
           </GlassCard>
         </motion.div>
+
+        {actionable.length > 0 && (
+          <motion.div variants={staggerItem}>
+            <GlassCard className="p-5" tilt={false}>
+              <h2 className="text-sm font-semibold text-foreground mb-4">Actionable insights</h2>
+              <div className="space-y-2">
+                {actionable.map(a => (
+                  <div key={a.id} className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <p className="text-xs font-medium text-foreground">{a.title}</p>
+                      <span className={`text-[10px] font-semibold ${a.level === 'warn' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {a.level === 'warn' ? 'Needs attention' : 'Good'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">{a.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
 
         <motion.div variants={staggerItem}>
           <GlassCard className="p-5" tilt={false}>

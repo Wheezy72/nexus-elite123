@@ -2,20 +2,13 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Target, Star, Play, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTasks } from '@/hooks/useCloudData';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { haptic } from '@/lib/haptics';
 import GlassCard from './GlassCard';
 
-interface Task {
-  id: string;
-  text: string;
-  column: 'todo' | 'progress' | 'done';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-}
-
 const DailyPlanner: React.FC = () => {
-  const [tasks] = useLocalStorage<Task[]>('nexus-tasks', []);
+  const { tasks } = useTasks();
   const [priorities, setPriorities] = useLocalStorage<string[]>('nexus-daily-priorities', []);
 
   const incompleteTasks = tasks.filter(t => t.column !== 'done');
@@ -31,6 +24,12 @@ const DailyPlanner: React.FC = () => {
   };
 
   const priorityTasks = tasks.filter(t => priorities.includes(t.id) && t.column !== 'done');
+
+  // Drop priorities that reference deleted/completed tasks.
+  React.useEffect(() => {
+    const valid = new Set(tasks.filter(t => t.column !== 'done').map(t => t.id));
+    setPriorities(prev => prev.filter(id => valid.has(id)));
+  }, [tasks, setPriorities]);
 
   return (
     <GlassCard className="p-5 space-y-4">

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PenLine, Search, X, Smile, Meh, Frown, Laugh, Angry, ChevronDown, ChevronUp } from 'lucide-react';
+import { PenLine, Search, X, Smile, Meh, Frown, Laugh, Angry, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { useJournal } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
@@ -51,12 +51,9 @@ const BrainDump: React.FC = () => {
     setTagInput('');
   };
 
-  const save = () => {
-    if (!text.trim()) return;
-    addEntry.mutate({ text: text.trim(), mood, tags });
-    setText('');
-    setMood(null);
-    setTags([]);
+  const applyTemplate = (id: (typeof JOURNAL_TEMPLATES)[number]['id']) => {
+    const tpl = JOURNAL_TEMPLATES.find(t => t.id === id);
+    if (!tpl) returngs([]);
     setShowCompose(false);
   };
 
@@ -84,13 +81,58 @@ const BrainDump: React.FC = () => {
             </span>
           )}
         </div>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowCompose(!showCompose)}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${showCompose ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-        >
-          {showCompose ? <X className="w-4 h-4" /> : <PenLine className="w-4 h-4" />}
-        </motion.button>
+
+        <div className="flex items-center gap-1.5 relative">
+          <div className="relative">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowTemplates(v => !v)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${showTemplates ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              title="Templates"
+            >
+              <Sparkles className="w-4 h-4" />
+            </motion.button>
+
+            <AnimatePresence>
+              {showTemplates && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-64 glass rounded-2xl border border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.35)] p-2 z-10"
+                >
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">Templates</p>
+                  <div className="space-y-1">
+                    {JOURNAL_TEMPLATES.map(t => (
+                      <motion.button
+                        key={t.id}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => applyTemplate(t.id)}
+                        className="w-full text-left px-2 py-2 rounded-xl hover:bg-white/[0.04] transition-colors"
+                      >
+                        <p className="text-xs font-semibold text-foreground">{t.name}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Adds a starter prompt</p>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => {
+              setShowTemplates(false);
+              setShowCompose(!showCompose);
+            }}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${showCompose ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            title={showCompose ? 'Close' : 'Write'}
+          >
+            {showCompose ? <X className="w-4 h-4" /> : <PenLine className="w-4 h-4" />}
+          </motion.button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -117,7 +159,7 @@ const BrainDump: React.FC = () => {
                     whileHover={{ scale: 1.15 }}
                     onClick={() => setMood(mood === i + 1 ? null : i + 1)}
                     className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
-                      mood === i + 1 ? 'bg-primary/20 shadow-[0_0_12px_rgba(99,102,241,0.2)]' : 'hover:bg-accent/20'
+                      mood === i + 1 ? 'bg-primary/20 shadow-[0_0_12px_hsl(var(--primary)_/_0.22)]' : 'hover:bg-accent/20'
                     }`}
                   >
                     <Icon className={`w-4 h-4 transition-colors ${mood === i + 1 ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -184,7 +226,7 @@ const BrainDump: React.FC = () => {
                 key={entry.id}
                 variants={listItem}
                 layout
-                className={`glass rounded-xl p-3 group relative border-l-2 ${borderClass} hover:shadow-[0_0_20px_rgba(99,102,241,0.05)] transition-shadow`}
+                className={`glass rounded-xl p-3 group relative border-l-2 ${borderClass} hover:shadow-[0_0_20px_hsl(var(--primary)_/_0.08)] transition-shadow`}
               >
                 <button onClick={() => handleDelete(entry.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />

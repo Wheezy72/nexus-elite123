@@ -61,7 +61,31 @@ export function useTasks() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); rewardAction('task_create'); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      rewardAction('task_create');
+    },
+  });
+
+  const addTasks = useMutation({
+    mutationFn: async (tasksToAdd: Array<Omit<Task, 'id' | 'createdAt'>>) => {
+      if (!user) return;
+      if (!tasksToAdd.length) return;
+      const rows = tasksToAdd.map(t => ({
+        user_id: user.id,
+        text: t.text,
+        column_status: t.column,
+        priority: t.priority,
+        due_date: t.dueDate || null,
+        subtasks: t.subtasks,
+      }));
+      const { error } = await supabase.from('tasks').insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      rewardAction('task_create');
+    },
   });
 
   const updateTask = useMutation({
@@ -75,7 +99,7 @@ export function useTasks() {
       }).eq('id', task.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks', user?.id] }),
   });
 
   const deleteTask = useMutation({
@@ -83,10 +107,10 @@ export function useTasks() {
       const { error } = await supabase.from('tasks').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks', user?.id] }),
   });
 
-  return { tasks, isLoading, setTasks, addTask, updateTask, deleteTask };
+  return { tasks, isLoading, setTasks, addTask, addTasks, updateTask, deleteTask };
 }
 
 // ==================== HABITS ====================

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Navbar from './Navbar';
 import VisionShimmer from './VisionShimmer';
@@ -34,6 +34,23 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
   const [showNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
   const [showGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
   const [showBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
+  const [theme, setTheme] = useLocalStorage<string>('nexus-theme', 'forest');
+
+  // Apply theme globally so it works on refresh and on every route.
+  // Also migrate legacy theme ids.
+  useEffect(() => {
+    const next = theme === 'indigo' ? 'midnight' : theme;
+    const allowed = next === 'forest' || next === 'midnight' || next === 'ivory';
+
+    if (!allowed) {
+      setTheme('forest');
+      document.documentElement.setAttribute('data-theme', 'forest');
+      return;
+    }
+
+    if (next !== theme) setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+  }, [theme, setTheme]);
 
   const { scrollY } = useScroll();
   // Parallax: blobs move at different rates as user scrolls

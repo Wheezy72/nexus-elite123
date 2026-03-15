@@ -79,7 +79,7 @@ const menuSections: Array<{ title: string; items: NavItem[] }> = [
     title: 'You',
     items: [
       { to: '/profile', label: 'Profile', icon: User },
-      { to: '/finance', label: 'Finance', icon: DollarSigninance', label: 'Finance', icon: DollarSign },
+      { to: '/finance', label: 'Finance', icon: DollarSign },
       { to: '/settings', label: 'Settings', icon: Settings },
     ],
   },
@@ -132,7 +132,7 @@ const Navbar: React.FC = () => {
                     to={tab.to}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                       active
-                        ? 'bg-primary/15 text-primary shadow-[0_0_20px_rgba(99,102,241,0.12)]'
+                        ? 'bg-primary/15 text-primary shadow-[0_0_20px_hsl(var(--primary)_/_0.18)]'
                         : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
                     }`}
                   >

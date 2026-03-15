@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Timer, CheckCircle2, Target, PenLine } from 'lucide-react';
+import { useTasks, useHabits, useJournal } from '@/hooks/useCloudData';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import GlassCard from './GlassCard';
 
@@ -11,31 +12,11 @@ interface FlowSession {
   type: 'focus' | 'break';
 }
 
-interface Task {
-  id: string;
-  column: 'todo' | 'progress' | 'done';
-  createdAt: string;
-}
-
-interface Habit {
-  id: string;
-}
-
-interface HabitLog {
-  [date: string]: string[];
-}
-
-interface JournalEntry {
-  id: string;
-  timestamp: string;
-}
-
 const ProductivityScore: React.FC = () => {
   const [sessions] = useLocalStorage<FlowSession[]>('nexus-flow-sessions', []);
-  const [tasks] = useLocalStorage<Task[]>('nexus-tasks', []);
-  const [habits] = useLocalStorage<Habit[]>('nexus-habits', []);
-  const [habitLog] = useLocalStorage<HabitLog>('nexus-habit-log', {});
-  const [journal] = useLocalStorage<JournalEntry[]>('nexus-journal', []);
+  const { tasks } = useTasks();
+  const { habits, logs: habitLog } = useHabits();
+  const { entries: journal } = useJournal();
 
   // Get last 7 days
   const last7Keys = Array.from({ length: 7 }, (_, i) => {

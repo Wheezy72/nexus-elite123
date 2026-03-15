@@ -837,7 +837,7 @@ const FinancePage: React.FC = () => {
                           <div className="grid grid-cols-6 gap-2 flex-1">
                             {row.map((v, c) => {
                               const intensity = heat.max ? v / heat.max : 0;
-                              const bg = `rgba(99,102,241,${Math.min(0.85, 0.08 + intensity * 0.85)})`;
+                              const bg = `hsl(var(--primary) / ${Math.min(0.85, 0.08 + intensity * 0.85)})`;
                               return (
                                 <div
                                   key={c}

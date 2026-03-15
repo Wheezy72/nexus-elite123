@@ -1,17 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Type, Flame, Calendar } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useJournal } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 
-interface JournalEntry {
-  id: string;
-  text: string;
-  timestamp: string;
-}
-
 const JournalStats: React.FC = () => {
-  const [entries] = useLocalStorage<JournalEntry[]>('nexus-journal', []);
+  const { entries } = useJournal();
 
   const totalEntries = entries.length;
   const totalWords = entries.reduce((sum, e) => sum + (e.text.trim() ? e.text.trim().split(/\s+/).length : 0), 0);
