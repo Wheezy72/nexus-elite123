@@ -15,7 +15,7 @@ type Cache = {
   outbox: OutboxItem[];
 };
 
-const KEY = 'nexus-mobile-finance-outbox-v1';
+const KEY = 'future-mobile-finance-outbox-v1';
 
 async function readCache(): Promise<Cache> {
   const raw = await AsyncStorage.getItem(KEY);

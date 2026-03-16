@@ -9,8 +9,8 @@ import { startAudio, stopAudio, getIsPlaying, type NoiseType } from '@/lib/audio
 
 const FlowPage = () => {
   const handleApplyScene = useCallback((volumes: Record<NoiseType, number>, tone: number) => {
-    localStorage.setItem('nexus-noise-vols', JSON.stringify(volumes));
-    localStorage.setItem('nexus-tone', JSON.stringify(tone));
+    localStorage.setItem('future-noise-vols', JSON.stringify(volumes));
+    localStorage.setItem('future-tone', JSON.stringify(tone));
     if (getIsPlaying()) {
       stopAudio();
       startAudio({ noiseVolumes: volumes, tone, customAudioUrl: null, customVolume: 50 });

@@ -23,7 +23,7 @@ interface FinanceMonthCache {
 }
 
 function cacheKey(userId: string, monthKey: string) {
-  return `nexus-finance-cache-v1:${userId}:${monthKey}`;
+  return `future-finance-cache-v1:${userId}:${monthKey}`;
 }
 
 function defaultCache(monthKey: string): FinanceMonthCache {

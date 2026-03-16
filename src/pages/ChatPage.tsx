@@ -76,7 +76,7 @@ const ChatPage: React.FC = () => {
             <MessageCircle className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Nexus AI</h1>
+            <h1 className="text-2xl font-bold text-foreground">Future AI</h1>
             <p className="text-xs text-muted-foreground">A calm companion — practical, not preachy.</p>
           </div>
         </div>

@@ -13,7 +13,7 @@ interface FlowSession {
 }
 
 const ProductivityScore: React.FC = () => {
-  const [sessions] = useLocalStorage<FlowSession[]>('nexus-flow-sessions', []);
+  const [sessions] = useLocalStorage<FlowSession[]>('future-flow-sessions', []);
   const { tasks } = useTasks();
   const { habits, logs: habitLog } = useHabits();
   const { entries: journal } = useJournal();

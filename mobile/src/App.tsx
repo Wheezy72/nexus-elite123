@@ -168,7 +168,7 @@ export default function App() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#0b1020' }}>
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-          <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>Nexus Elite</Text>
+          <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>Future</Text>
           <Text style={{ color: '#94a3b8', fontSize: 12 }}>
             Sign in to sync finance imports to your Supabase account.
           </Text>

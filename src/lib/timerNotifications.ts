@@ -14,7 +14,7 @@ export function sendTimerNotification(title: string, body: string) {
       new Notification(title, {
         body,
         icon: '/pwa-192x192.png',
-        tag: 'nexus-timer',
+        tag: 'future-timer',
         requireInteraction: false,
       });
     } catch {

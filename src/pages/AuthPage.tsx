@@ -73,12 +73,7 @@ const AuthPage: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      {/* Background effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/8 rounded-full blur-[120px] animate-[blob-float-1_20s_ease-in-out_infinite]" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-accent/8 rounded-full blur-[120px] animate-[blob-float-2_25s_ease-in-out_infinite]" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4">
 
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -92,7 +87,7 @@ const AuthPage: React.FC = () => {
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/40 to-accent/30 border border-primary/30 flex items-center justify-center">
               <Zap className="w-5 h-5 text-primary" />
             </div>
-            <span className="text-xl font-bold text-foreground">Nexus Elite</span>
+            <span className="text-xl font-bold text-foreground">Future</span>
           </div>
 
           <h2 className="text-lg font-semibold text-foreground text-center mb-1">

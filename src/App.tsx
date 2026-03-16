@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PinGate from "./components/PinGate";
 import GameToasts from "./components/GameToasts";
+import FutureBackground from "./components/FutureBackground";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Index from "./pages/Index";
@@ -48,6 +49,7 @@ const App = () => (
       <Sonner />
       <GameToasts />
       <BrowserRouter>
+        <FutureBackground />
         <AuthProvider>
           <AnimatePresence mode="wait">
             <Routes>

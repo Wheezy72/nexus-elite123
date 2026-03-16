@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PenLine, Search, X, Smile, Meh, Frown, Laugh, Angry, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { useJournal } from '@/hooks/useCloudData';
+import { useJournal, useJournalTemplates } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
 
@@ -24,14 +24,46 @@ const listItem = {
   show: { opacity: 1, x: 0 },
 };
 
+const JOURNAL_TEMPLATES = [
+  {
+    id: 'quick-checkin',
+    name: 'Quick check-in',
+    text:
+      "What’s the one thing on my mind right now?\n\nWhat’s the smallest next step (2–10 min)?\n\nWhat would make today feel like a win?",
+    tags: ['checkin'],
+  },
+  {
+    id: 'gratitudes',
+    name: '3 gratitudes',
+    text: '3 things I’m grateful for today:\n1) \n2) \n3) ',
+    tags: ['gratitude'],
+  },
+  {
+    id: 'daily-reflection',
+    name: 'Daily reflection',
+    text:
+      'Today I did well at…\n\nToday I struggled with…\n\nTomorrow I will make it easier by…',
+    tags: ['reflection'],
+  },
+  {
+    id: 'feynman',
+    name: 'Feynman starter',
+    text:
+      'Explain the concept as if teaching a beginner:\n\n1) The idea in one sentence:\n2) Simple explanation:\n3) Example:\n4) What I’m still confused about:',
+    tags: ['study', 'feynman'],
+  },
+] as const;
+
 const BrainDump: React.FC = () => {
   const { entries, addEntry, deleteEntry } = useJournal();
+  const journalTemplates = useJournalTemplates();
   const [text, setText] = useState('');
   const [mood, setMood] = useState<number | null>(null);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [showCompose, setShowCompose] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
@@ -51,9 +83,39 @@ const BrainDump: React.FC = () => {
     setTagInput('');
   };
 
-  const applyTemplate = (id: (typeof JOURNAL_TEMPLATES)[number]['id']) => {
-    const tpl = JOURNAL_TEMPLATES.find(t => t.id === id);
-    if (!tpl) returngs([]);
+  const templateItems = [
+    ...JOURNAL_TEMPLATES.map(t => ({ ...t, id: `built-${t.id}`, description: '' })),
+    ...journalTemplates.templates.map(t => ({
+      id: `cloud-${t.id}`,
+      name: t.name,
+      text: t.text,
+      tags: t.tags,
+      description: t.description,
+    })),
+  ];
+
+  const applyTemplate = (id: string) => {
+    const tpl = templateItems.find(t => t.id === id);
+    if (!tpl) return;
+
+    setText(prev => (prev.trim() ? `${prev.trim()}\n\n${tpl.text}` : tpl.text));
+    setTags(prev => {
+      const next = new Set(prev);
+      (tpl.tags || []).forEach(t => next.add(t));
+      return Array.from(next);
+    });
+
+    setShowTemplates(false);
+    setShowCompose(true);
+  };
+
+  const save = () => {
+    if (!text.trim()) return;
+    addEntry.mutate({ text: text.trim(), mood, tags });
+    setText('');
+    setMood(null);
+    setTags([]);
+    setTagInput('');
     setShowCompose(false);
   };
 
@@ -104,7 +166,7 @@ const BrainDump: React.FC = () => {
                 >
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">Templates</p>
                   <div className="space-y-1">
-                    {JOURNAL_TEMPLATES.map(t => (
+                    {templateItems.map(t => (
                       <motion.button
                         key={t.id}
                         whileTap={{ scale: 0.98 }}
@@ -112,7 +174,7 @@ const BrainDump: React.FC = () => {
                         className="w-full text-left px-2 py-2 rounded-xl hover:bg-white/[0.04] transition-colors"
                       >
                         <p className="text-xs font-semibold text-foreground">{t.name}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Adds a starter prompt</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{t.description || 'Adds a starter prompt'}</p>
                       </motion.button>
                     ))}
                   </div>

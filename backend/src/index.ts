@@ -1,12 +1,12 @@
 import "dotenv/config";
 import cors from "cors";
-import express from "express";
+import express, { type Request } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import fs from "node:fs";
 import path from "node:path";
-import { chatWithAI, getProvider, isAIEnabled, type AIContext } from "./services/aiService.js";
+import { chatWithAI, getProvider, isAIEnabled, type AIContext, type AIRequestOverrides } from "./services/aiService.js";
 import { keywordCategorize, normalizeCategoryName } from "./services/financeCategorizer.js";
 
 const app = express();
@@ -43,7 +43,7 @@ const corsOrigin = process.env.CORS_ORIGIN;
 if (corsOrigin) {
   const origins = corsOrigin
     .split(",")
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
   app.use(cors({ origin: origins, credentials: true }));
 } else {
@@ -52,12 +52,25 @@ if (corsOrigin) {
 
 app.use(express.json({ limit: "10mb" }));
 
+function getAIOverridesFromReq(req: Request): AIRequestOverrides | undefined {
+  const providerRaw = String(req.headers["x-ai-provider"] || "").toLowerCase().trim();
+  const apiKey = typeof req.headers["x-ai-key"] === "string" ? req.headers["x-ai-key"] : undefined;
+
+  if (!apiKey) return undefined;
+  if (providerRaw !== "openai" && providerRaw !== "gemini") return undefined;
+
+  return {
+    provider: providerRaw as AIRequestOverrides["provider"],
+    apiKey,
+  };
+}
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 app.get("/api/ai/status", (_req, res) => {
-  res.json({ provider: getProvider(), enabled: isAIEnabled() });
+  res.json({ provider: getProvider(), enabled: isAIEnabled(), supportsByok: true });
 });
 
 const chatBodySchema = z.object({
@@ -85,6 +98,37 @@ const financeInsightsSchema = z.object({
   byCategory: z.array(z.object({ name: z.string(), value: z.number() })).default([]),
 });
 
+const weeklyRecapSchema = z.object({
+  weekOf: z.string().min(10).max(10),
+  profile: z
+    .object({
+      archetype: z.string().optional(),
+      peakTime: z.string().optional(),
+      strengths: z.array(z.string()).optional(),
+      challenges: z.array(z.string()).optional(),
+      updatedAt: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
+  analytics: z
+    .object({
+      current: z.unknown(),
+      delta: z.unknown(),
+    })
+    .passthrough(),
+  health: z
+    .object({
+      stepsAvg: z.number().nullable().optional(),
+      sleepAvgHours: z.number().nullable().optional(),
+      restingHrAvg: z.number().nullable().optional(),
+    })
+    .passthrough()
+    .optional(),
+  correlations: z.array(z.unknown()).default([]),
+  anomalies: z.array(z.object({ id: z.string(), title: z.string(), detail: z.string() })).default([]),
+  nextActions: z.array(z.object({ id: z.string(), title: z.string(), minutes: z.number(), route: z.string() })).default([]),
+});
+
 const aiLimiter = rateLimit({
   windowMs: 60_000,
   max: 10,
@@ -95,7 +139,16 @@ const aiLimiter = rateLimit({
     const auth = req.headers.authorization;
     return auth ? `auth:${auth.slice(0, 32)}` : `ip:${req.ip}`;
   },
-  skip: () => String(process.env.AI_PROVIDER || "mock").toLowerCase() === "mock",
+  skip: (req) => {
+    const envMock = String(process.env.AI_PROVIDER || "mock").toLowerCase() === "mock";
+    if (!envMock) return false;
+
+    const hasByok =
+      typeof req.headers["x-ai-key"] === "string" &&
+      String(req.headers["x-ai-provider"] || "").trim().length > 0;
+
+    return !hasByok;
+  },
 });
 
 app.post("/api/ai/chat", aiLimiter, async (req, res) => {
@@ -105,9 +158,11 @@ app.post("/api/ai/chat", aiLimiter, async (req, res) => {
     return;
   }
 
+  const overrides = getAIOverridesFromReq(req);
+
   try {
     const { message, context } = parsed.data;
-    const result = await chatWithAI(message, context as AIContext | undefined);
+    const result = await chatWithAI(message, context as AIContext | undefined, overrides);
 
     res.json({
       response: result.content,
@@ -123,6 +178,70 @@ app.post("/api/ai/chat", aiLimiter, async (req, res) => {
     // eslint-disable-next-line no-console
     console.error("AI chat error:", err);
     res.status(500).json({ error: "Failed to get response" });
+  }
+});
+
+app.post("/api/ai/weekly-recap", aiLimiter, async (req, res) => {
+  const parsed = weeklyRecapSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const overrides = getAIOverridesFromReq(req);
+  const enabled = isAIEnabled(overrides);
+
+  const basicBullets: string[] = [];
+  const anomalies = parsed.data.anomalies || [];
+  for (const a of anomalies.slice(0, 2)) {
+    basicBullets.push(`${a.title}: ${a.detail}`);
+  }
+
+  const next = parsed.data.nextActions?.[0] || null;
+
+  if (!enabled) {
+    res.json({
+      bullets: basicBullets.length ? basicBullets.slice(0, 3) : ["Log one thing daily to get a cleaner weekly signal."],
+      nextStep: next ? { title: next.title, minutes: next.minutes, route: next.route } : null,
+      provider: getProvider(),
+    });
+    return;
+  }
+
+  const prompt =
+    "Write a weekly recap for the user and return ONLY JSON (no markdown). " +
+    "Schema: {bullets:string[],nextStep:{title:string,minutes:number,route?:string}|null,why?:string[]}. " +
+    "Rules: max 3 bullets, no fluff, include at least one number, be kind but direct. " +
+    `WeekOf: ${parsed.data.weekOf}. ` +
+    `Profile: ${JSON.stringify(parsed.data.profile || {})}. ` +
+    `Analytics: ${JSON.stringify(parsed.data.analytics)}. ` +
+    `Health: ${JSON.stringify(parsed.data.health || {})}. ` +
+    `Correlations: ${JSON.stringify(parsed.data.correlations || [])}. ` +
+    `Anomalies: ${JSON.stringify(parsed.data.anomalies || [])}. ` +
+    `NextActions: ${JSON.stringify(parsed.data.nextActions || [])}.`;
+
+  try {
+    const result = await chatWithAI(prompt, { isADHDContext: true }, overrides);
+    const raw = result.content.trim();
+
+    const jsonStart = raw.indexOf("{");
+    const jsonEnd = raw.lastIndexOf("}");
+    const candidate = jsonStart >= 0 && jsonEnd >= 0 ? raw.slice(jsonStart, jsonEnd + 1) : raw;
+
+    const data = JSON.parse(candidate) as { bullets?: unknown; nextStep?: unknown; why?: unknown };
+
+    res.json({
+      bullets: Array.isArray(data.bullets) ? data.bullets.map(String).slice(0, 3) : basicBullets.slice(0, 3),
+      nextStep: data.nextStep ?? (next ? { title: next.title, minutes: next.minutes, route: next.route } : null),
+      why: Array.isArray(data.why) ? data.why.map(String).slice(0, 5) : [],
+      provider: result.provider,
+    });
+  } catch {
+    res.json({
+      bullets: basicBullets.length ? basicBullets.slice(0, 3) : ["Log one thing daily to get a cleaner weekly signal."],
+      nextStep: next ? { title: next.title, minutes: next.minutes, route: next.route } : null,
+      provider: overrides?.provider || getProvider(),
+    });
   }
 });
 
@@ -149,6 +268,8 @@ app.post("/api/ai/study-plan", aiLimiter, async (req, res) => {
     return;
   }
 
+  const overrides = getAIOverridesFromReq(req);
+
   const { subject, duration, examDate, learningStyle, hoursAvailable } = parsed.data;
 
   const prompt =
@@ -159,7 +280,7 @@ app.post("/api/ai/study-plan", aiLimiter, async (req, res) => {
     (examDate ? `Exam date: ${examDate}. ` : "");
 
   try {
-    const result = await chatWithAI(prompt, { isADHDContext: true });
+    const result = await chatWithAI(prompt, { isADHDContext: true }, overrides);
     const raw = result.content.trim();
 
     const jsonStart = raw.indexOf("{");
@@ -182,11 +303,13 @@ app.post("/api/ai/finance/categorize", aiLimiter, async (req, res) => {
     return;
   }
 
+  const overrides = getAIOverridesFromReq(req);
+
   const merchant = parsed.data.merchant;
   const fallback = keywordCategorize(merchant);
 
-  if (!isAIEnabled()) {
-    res.json({ category: fallback, provider: getProvider(), usedAI: false });
+  if (!isAIEnabled(overrides)) {
+    res.json({ category: fallback, provider: overrides?.provider || getProvider(), usedAI: false });
     return;
   }
 
@@ -198,7 +321,7 @@ app.post("/api/ai/finance/categorize", aiLimiter, async (req, res) => {
     `Merchant: ${merchant}. Categories: ${JSON.stringify(categories)}.`;
 
   try {
-    const result = await chatWithAI(prompt, { isADHDContext: false });
+    const result = await chatWithAI(prompt, { isADHDContext: false }, overrides);
     const raw = result.content.trim();
 
     const jsonStart = raw.indexOf("{");
@@ -214,7 +337,7 @@ app.post("/api/ai/finance/categorize", aiLimiter, async (req, res) => {
       usedAI: true,
     });
   } catch {
-    res.json({ category: fallback, provider: getProvider(), usedAI: false });
+    res.json({ category: fallback, provider: overrides?.provider || getProvider(), usedAI: false });
   }
 });
 
@@ -224,6 +347,8 @@ app.post("/api/ai/finance/insights", aiLimiter, async (req, res) => {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
+
+  const overrides = getAIOverridesFromReq(req);
 
   const { monthKey, budget, totalSpent, byCategory } = parsed.data;
   const basic: string[] = [];
@@ -237,8 +362,8 @@ app.post("/api/ai/finance/insights", aiLimiter, async (req, res) => {
   const top = byCategory.sort((a, b) => b.value - a.value)[0];
   if (top) basic.push(`Top category: ${top.name} (${Math.round(top.value)}).`);
 
-  if (!isAIEnabled()) {
-    res.json({ monthKey, insights: basic, provider: getProvider(), usedAI: false });
+  if (!isAIEnabled(overrides)) {
+    res.json({ monthKey, insights: basic, provider: overrides?.provider || getProvider(), usedAI: false });
     return;
   }
 
@@ -249,7 +374,7 @@ app.post("/api/ai/finance/insights", aiLimiter, async (req, res) => {
     `Month: ${monthKey}. Total spent: ${totalSpent}. Budget: ${budget ?? "none"}. By category: ${JSON.stringify(byCategory)}.`;
 
   try {
-    const result = await chatWithAI(prompt, { isADHDContext: true });
+    const result = await chatWithAI(prompt, { isADHDContext: true }, overrides);
     const raw = result.content.trim();
 
     const jsonStart = raw.indexOf("{");
@@ -265,7 +390,7 @@ app.post("/api/ai/finance/insights", aiLimiter, async (req, res) => {
       usedAI: true,
     });
   } catch {
-    res.json({ monthKey, insights: basic, provider: getProvider(), usedAI: false });
+    res.json({ monthKey, insights: basic, provider: overrides?.provider || getProvider(), usedAI: false });
   }
 });
 
@@ -284,5 +409,5 @@ if (fs.existsSync(frontendIndex)) {
 const port = Number(process.env.PORT || 3001);
 app.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Nexus Elite running on http://localhost:${port}`);
+  console.log(`Future running on http://localhost:${port}`);
 });

@@ -18,8 +18,8 @@ const TIPS = [
 
 const HydrationTips: React.FC = () => {
   const todayKey = new Date().toISOString().split('T')[0];
-  const [log] = useLocalStorage<Record<string, number>>('nexus-water-log', {});
-  const [lastDrinkTime, setLastDrinkTime] = useLocalStorage<string | null>('nexus-last-drink', null);
+  const [log] = useLocalStorage<Record<string, number>>('future-water-log', {});
+  const [lastDrinkTime, setLastDrinkTime] = useLocalStorage<string | null>('future-last-drink', null);
   const [tipIndex, setTipIndex] = useState(0);
   const [timeSince, setTimeSince] = useState<string>('');
 

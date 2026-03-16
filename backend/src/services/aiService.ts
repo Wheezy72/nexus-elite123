@@ -23,8 +23,15 @@ export interface AIContext {
   isADHDContext?: boolean;
 }
 
+export interface AIRequestOverrides {
+  provider?: AIProvider;
+  apiKey?: string;
+  model?: string;
+  baseUrl?: string;
+}
+
 const BASE_SYSTEM_PROMPT =
-  "You are Nexus, a personal companion for a university student. " +
+  "You are Future, a personal companion for a university student. " +
   "Conversational and warm, but practical. Avoid medical claims or diagnosis. " +
   "Always give small next steps. Keep answers concise unless asked for detail.";
 
@@ -34,8 +41,9 @@ export function getProvider(): AIProvider {
   return 'mock';
 }
 
-export function isAIEnabled() {
-  return getProvider() !== 'mock';
+export function isAIEnabled(overrides?: AIRequestOverrides) {
+  const provider = overrides?.provider ?? getProvider();
+  return provider !== 'mock';
 }
 
 function buildSystemPrompt(context?: AIContext): string {
@@ -91,12 +99,12 @@ function mockResponse(_prompt: string, _context?: AIContext): AIResponse {
   };
 }
 
-async function callOpenAI(systemPrompt: string, prompt: string): Promise<AIResponse> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('Missing OPENAI_API_KEY. Add it to backend/.env');
+async function callOpenAI(systemPrompt: string, prompt: string, overrides?: AIRequestOverrides): Promise<AIResponse> {
+  const apiKey = overrides?.apiKey || process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('Missing OpenAI API key');
 
-  const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const baseUrl = overrides?.baseUrl || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+  const model = overrides?.model || process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
   const resp = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
@@ -136,11 +144,11 @@ async function callOpenAI(systemPrompt: string, prompt: string): Promise<AIRespo
   };
 }
 
-async function callGemini(systemPrompt: string, prompt: string): Promise<AIResponse> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!apiKey) throw new Error('Missing GEMINI_API_KEY (or GOOGLE_API_KEY). Add it to backend/.env');
+async function callGemini(systemPrompt: string, prompt: string, overrides?: AIRequestOverrides): Promise<AIResponse> {
+  const apiKey = overrides?.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey) throw new Error('Missing Gemini API key');
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = overrides?.model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   const fullPrompt = `${systemPrompt}\n\nUser: ${prompt}`;
 
   const resp = await fetch(
@@ -176,14 +184,14 @@ async function callGemini(systemPrompt: string, prompt: string): Promise<AIRespo
   };
 }
 
-export async function chatWithAI(prompt: string, context?: AIContext): Promise<AIResponse> {
-  const provider = getProvider();
+export async function chatWithAI(prompt: string, context?: AIContext, overrides?: AIRequestOverrides): Promise<AIResponse> {
+  const provider = overrides?.provider ?? getProvider();
   const systemPrompt = buildSystemPrompt(context);
   const userPrompt = buildUserPrompt(prompt, context);
 
   try {
-    if (provider === 'openai') return await callOpenAI(systemPrompt, userPrompt);
-    if (provider === 'gemini') return await callGemini(systemPrompt, userPrompt);
+    if (provider === 'openai') return await callOpenAI(systemPrompt, userPrompt, overrides);
+    if (provider === 'gemini') return await callGemini(systemPrompt, userPrompt, overrides);
     return mockResponse(prompt, context);
   } catch (err) {
     const fallback = mockResponse(prompt, context);

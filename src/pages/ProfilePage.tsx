@@ -72,7 +72,7 @@ const ProfilePage: React.FC = () => {
 
       try {
         setPhotoBusy(true);
-        const { data, error } = await supabase.storage.from('nexus-profile').download(path);
+        const { data, error } = await supabase.storage.from('future-profile').download(path);
         if (error) throw error;
 
         const buf = new Uint8Array(await data.arrayBuffer());
@@ -136,7 +136,7 @@ const ProfilePage: React.FC = () => {
       const container = new Blob([packed], { type: 'application/octet-stream' });
 
       const path = `${user.id}/profile-photo.bin`;
-      const { error: uploadError } = await supabase.storage.from('nexus-profile').upload(path, container, {
+      const { error: uploadError } = await supabase.storage.from('future-profile').upload(path, container, {
         upsert: true,
         contentType: 'application/octet-stream',
       });
@@ -164,7 +164,7 @@ const ProfilePage: React.FC = () => {
 
     setPhotoBusy(true);
     try {
-      await supabase.storage.from('nexus-profile').remove([path]);
+      await supabase.storage.from('future-profile').remove([path]);
       const { error } = await supabase.from('profiles').update({ profile_photo_path: null }).eq('user_id', user.id);
       if (error) throw error;
       await refreshProfile();

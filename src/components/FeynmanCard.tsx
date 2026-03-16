@@ -23,7 +23,7 @@ const vaultItem = {
 };
 
 const FeynmanCard: React.FC = () => {
-  const [vault, setVault] = useLocalStorage<Reflection[]>('nexus-knowledge-vault', []);
+  const [vault, setVault] = useLocalStorage<Reflection[]>('future-knowledge-vault', []);
   const [isFlipped, setIsFlipped] = useState(false);
   const [front, setFront] = useState('');
   const [back, setBack] = useState('');

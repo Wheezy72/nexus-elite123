@@ -4,7 +4,7 @@ import {
   Plus, X, CheckCircle2, Circle, Trash2, ListTodo, ArrowRight, Clock,
   Filter, Calendar, ChevronDown, ChevronUp, Square, CheckSquare, Sparkles
 } from 'lucide-react';
-import { useTasks } from '@/hooks/useCloudData';
+import { useTaskTemplates, useTasks } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
 import { rewardAction } from '@/lib/rewards';
@@ -101,6 +101,7 @@ const cardAnim = {
 
 const TaskBoard: React.FC = () => {
   const { tasks, addTask: addTaskMut, addTasks: addTasksMut, updateTask: updateTaskMut, deleteTask: deleteTaskMut } = useTasks();
+  const taskTemplates = useTaskTemplates();
   const [newText, setNewText] = useState('');
   const [newPriority, setNewPriority] = useState<Task['priority']>('medium');
   const [newDueDate, setNewDueDate] = useState('');
@@ -186,8 +187,53 @@ const TaskBoard: React.FC = () => {
   const totalTasks = tasks.length;
   const today = new Date().toISOString().split('T')[0];
 
+  const normalizeTemplateTasks = (value: unknown): Array<Omit<Task, 'id' | 'createdAt'>> => {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map((t: any) => {
+        const col = t?.column;
+        const column: Task['column'] = col === 'progress' || col === 'done' ? col : 'todo';
+
+        const pr = t?.priority;
+        const priority: Task['priority'] = pr === 'low' || pr === 'high' ? pr : 'medium';
+
+        const subtasks = Array.isArray(t?.subtasks)
+          ? t.subtasks
+              .map((s: any) => ({
+                id: typeof s?.id === 'string' ? s.id : crypto.randomUUID(),
+                text: String(s?.text || '').trim(),
+                done: Boolean(s?.done),
+              }))
+              .filter((s: SubTask) => s.text)
+          : [];
+
+        const text = String(t?.text || '').trim();
+        if (!text) return null;
+
+        return {
+          text,
+          column,
+          priority,
+          dueDate: typeof t?.dueDate === 'string' ? t.dueDate : undefined,
+          subtasks,
+        };
+      })
+      .filter(Boolean) as Array<Omit<Task, 'id' | 'createdAt'>>;
+  };
+
+  const templateItems = [
+    ...TASK_TEMPLATES,
+    ...taskTemplates.templates.map(t => ({
+      id: `cloud-${t.id}`,
+      name: t.name,
+      desc: t.description || 'Custom template',
+      tasks: normalizeTemplateTasks(t.tasks),
+    })),
+  ];
+
   const applyTemplate = (templateId: string) => {
-    const tpl = TASK_TEMPLATES.find(t => t.id === templateId);
+    const tpl = templateItems.find(t => t.id === templateId);
     if (!tpl) return;
 
     addTasksMut.mutate(tpl.tasks, {
@@ -253,7 +299,7 @@ const TaskBoard: React.FC = () => {
                 >
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">Templates</p>
                   <div className="space-y-1">
-                    {TASK_TEMPLATES.map(t => (
+                    {templateItems.map(t => (
                       <motion.button
                         key={t.id}
                         whileTap={{ scale: 0.98 }}

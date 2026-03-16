@@ -4,6 +4,7 @@ import { Calendar, Sparkles, Plus, Loader2 } from 'lucide-react';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import { useTasks } from '@/hooks/useCloudData';
+import { aiClientService } from '@/services/aiClientService';
 import { toast } from 'sonner';
 
 interface StudyPlanRequest {
@@ -48,7 +49,7 @@ const StudyPlannerPage: React.FC = () => {
     try {
       const resp = await fetch('/api/ai/study-plan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...aiClientService.getRequestHeaders() },
         body: JSON.stringify(request),
       });
       if (!resp.ok) {

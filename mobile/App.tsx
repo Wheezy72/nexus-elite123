@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NexusFocus, type FocusBlockLevel, type FocusSessionStatus } from 'nexus-focus';
+import { FutureFocus, type FocusBlockLevel, type FocusSessionStatus } from 'future-focus';
 
 type Tab = 'focus' | 'feed' | 'analytics' | 'settings';
 
@@ -21,12 +21,12 @@ export default function App() {
   );
 
   useEffect(() => {
-    const sub = NexusFocus.addListener('FocusSessionStatus', (evt: any) => {
+    const sub = FutureFocus.addListener('FocusSessionStatus', (evt: any) => {
       setStatus(evt.status);
     });
 
     (async () => {
-      const s = await NexusFocus.getFocusStatus();
+      const s = await FutureFocus.getFocusStatus();
       setStatus(s);
     })();
 
@@ -40,7 +40,7 @@ export default function App() {
       <StatusBar style="light" />
 
       <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' }}>
-        <Text style={{ color: 'white', fontSize: 20, fontWeight: '700' }}>Nexus Focus (Android)</Text>
+        <Text style={{ color: 'white', fontSize: 20, fontWeight: '700' }}>Future Focus (Andro)<//TText
         <Text style={{ color: 'rgba(255,255,255,0.7)', marginTop: 4, fontSize: 12 }}>
           Notification Listener + Focus Mode + local analytics
         </Text>
@@ -170,10 +170,11 @@ function FocusPanel({
 
   useEffect(() => {
     (async () => {
-      setNotifGranted(await NexusFocus.hasNotificationAccess());
-      setDndGranted(await NexusFocus.hasDndAccess());
+      setNotifGranted(await FutureFocus.hasNotificationAccess());
+      setDndGranted(await FutureFocus.hasDndAccess());
     })();
   }, []);
+
 
   const active = Boolean(status?.active);
 
@@ -202,7 +203,7 @@ function FocusPanel({
             <SecondaryButton
               label="Grant Notification Access"
               onPress={async () => {
-                await NexusFocus.openNotificationAccessSettings();
+                await FutureFocus.openNotificationAccessSettings();
               }}
             />
           </View>
@@ -210,7 +211,7 @@ function FocusPanel({
             <SecondaryButton
               label="Grant DND Access"
               onPress={async () => {
-                await NexusFocus.openDndAccessSettings();
+                await FutureFocus.openDndAccessSettings();
               }}
             />
           </View>
@@ -239,7 +240,7 @@ function FocusPanel({
               label={active ? 'Focus is active' : 'Start focus'}
               disabled={active}
               onPress={async () => {
-                const newStatus = await NexusFocus.startFocusSession({
+                const newStatus = await FutureFocus.startFocusSession({
                   durationMinutes: duration,
                   blockLevel,
                 });
@@ -251,7 +252,7 @@ function FocusPanel({
             <SecondaryButton
               label="End focus"
               onPress={async () => {
-                const newStatus = await NexusFocus.stopFocusSession();
+                const newStatus = await FutureFocus.stopFocusSession();
                 onStatus(newStatus);
               }}
             />
@@ -284,7 +285,7 @@ function FeedPanel() {
 
   useEffect(() => {
     (async () => {
-      const list = await NexusFocus.getRecentDistractions({ limit: 80 });
+      const list = await FutureFocus.getRecentDistractions({ limit: 80 });
       setItems(list);
     })();
   }, []);
@@ -355,11 +356,11 @@ function AnalyticsPanel() {
 
   useEffect(() => {
     (async () => {
-      const s = await NexusFocus.getDistractionAnalytics({ days: 30 });
+      const s = await FutureFocus.getDistractionAnalytics({ days: 30 });
       setSummary(s);
-      const g = await NexusFocus.getGameState();
+      const g = await FutureFocus.getGameState();
       setGame(g);
-      const ls = await NexusFocus.getLastSessionSummary();
+      const ls = await FutureFocus.getLastSessionSummary();
       setLastSession(ls);
     })();
   }, []);
@@ -474,7 +475,7 @@ function SettingsPanel() {
 
   useEffect(() => {
     (async () => {
-      const s = await NexusFocus.getSettings();
+      const s = await FutureFocus.getSettings();
       setSettings(s);
     })();
   }, []);
@@ -485,7 +486,7 @@ function SettingsPanel() {
       ? settings.blockedCategories.filter(c => c !== cat)
       : [...settings.blockedCategories, cat];
 
-    const updated = await NexusFocus.updateSettings({ blockedCategories: next });
+    const updated = await FutureFocus.updateSettings({ blockedCategories: next });
     setSettings(updated);
   };
 
@@ -501,7 +502,7 @@ function SettingsPanel() {
             label={settings?.enabled ? 'Disable' : 'Enable'}
             onPress={async () => {
               if (!settings) return;
-              const updated = await NexusFocus.updateSettings({ enabled: !settings.enabled });
+              const updated = await FutureFocus.updateSettings({ enabled: !settings.enabled });
               setSettings(updated);
             }}
             disabled={!settings}
@@ -511,7 +512,7 @@ function SettingsPanel() {
           <SecondaryButton
             label="Clear local logs"
             onPress={async () => {
-              await NexusFocus.clearLocalData();
+              await FutureFocus.clearLocalData();
             }}
           />
         </View>
@@ -544,7 +545,7 @@ function SettingsPanel() {
             label={settings?.scheduleEnabled ? 'Scheduled: On' : 'Scheduled: Off'}
             onPress={async () => {
               if (!settings) return;
-              const updated = await NexusFocus.updateSettings({ scheduleEnabled: !settings.scheduleEnabled });
+              const updated = await FutureFocus.updateSettings({ scheduleEnabled: !settings.scheduleEnabled });
               setSettings(updated);
             }}
             disabled={!settings}
@@ -561,7 +562,7 @@ function SettingsPanel() {
             selected={settings?.scheduleHour === h}
             onPress={async () => {
               if (!settings) return;
-              const updated = await NexusFocus.updateSettings({ scheduleHour: h, scheduleMinute: 0 });
+              const updated = await FutureFocus.updateSettings({ scheduleHour: h, scheduleMinute: 0 });
               setSettings(updated);
             }}
           />
@@ -575,7 +576,7 @@ function SettingsPanel() {
           selected={settings?.scheduleDays?.join(',') === '2,3,4,5,6'}
           onPress={async () => {
             if (!settings) return;
-            const updated = await NexusFocus.updateSettings({ scheduleDays: [2, 3, 4, 5, 6] });
+            const updated = await FutureFocus.updateSettings({ scheduleDays: [2, 3, 4, 5, 6] });
             setSettings(updated);
           }}
         />
@@ -584,7 +585,7 @@ function SettingsPanel() {
           selected={settings?.scheduleDays?.length === 7}
           onPress={async () => {
             if (!settings) return;
-            const updated = await NexusFocus.updateSettings({ scheduleDays: [1, 2, 3, 4, 5, 6, 7] });
+            const updated = await FutureFocus.updateSettings({ scheduleDays: [1, 2, 3, 4, 5, 6, 7] });
             setSettings(updated);
           }}
         />

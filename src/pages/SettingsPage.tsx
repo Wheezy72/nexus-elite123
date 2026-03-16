@@ -2,11 +2,13 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Trash2, Eye, EyeOff, Palette, Layers, RotateCcw, Video, Sparkles, Grid3X3, Lock, Download, HardDrive, Bell } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useJournalTemplates, useTaskTemplates } from '@/hooks/useCloudData';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
 import { pinLockService } from '@/services/pinLockService';
 import { backupService } from '@/services/backupService';
 import { notificationService } from '@/services/notificationService';
+import type { AIClientMode } from '@/services/aiClientService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -23,9 +25,9 @@ const themePresets = [
     },
   },
   {
-    id: 'indigo',
-    name: 'Indigo',
-    desc: 'Classic dark + indigo/violet neon.',
+    id: 'midnight',
+    name: 'Midnight',
+    desc: 'Deep charcoal + clean neon edge.',
     preview: {
       bg: '240 10% 3.9%',
       primary: '226 70% 55.5%',
@@ -34,50 +36,38 @@ const themePresets = [
     },
   },
   {
-    id: 'violet',
-    name: 'Violet',
-    desc: 'Deep violet with bright purple accents.',
+    id: 'ivory',
+    name: 'Ivory',
+    desc: 'Warm paper + deep ink accents.',
     preview: {
-      bg: '260 35% 10%',
-      primary: '270 70% 55%',
-      accent: '300 65% 52%',
-      fg: '0 0% 98%',
-    },
-  },
-  {
-    id: 'cyan',
-    name: 'Cyan',
-    desc: 'Deep navy with cyan glow.',
-    preview: {
-      bg: '210 45% 9%',
-      primary: '190 80% 50%',
-      accent: '200 80% 45%',
-      fg: '0 0% 98%',
-    },
-  },
-  {
-    id: 'rose',
-    name: 'Rose',
-    desc: 'Dark rose with neon pink accents.',
-    preview: {
-      bg: '340 35% 10%',
-      primary: '350 70% 55%',
-      accent: '330 80% 52%',
-      fg: '0 0% 98%',
+      bg: '40 40% 96%',
+      primary: '156 58% 18%',
+      accent: '28 80% 45%',
+      fg: '156 38% 10%',
     },
   },
 ] as const;
 
 const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
-  const [videoBg, setVideoBg] = useLocalStorage<string | null>('nexus-video-bg', null);
-  const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('nexus-video-enabled', true);
-  const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('nexus-video-opacity', 15);
-  const [theme, setTheme] = useLocalStorage<string>('nexus-theme', 'forest');
-  const [showNoise, setShowNoise] = useLocalStorage<boolean>('nexus-show-noise', true);
-  const [showGrid, setShowGrid] = useLocalStorage<boolean>('nexus-show-grid', true);
-  const [showBlobs, setShowBlobs] = useLocalStorage<boolean>('nexus-show-blobs', true);
-  const [smartNotifsEnabled, setSmartNotifsEnabled] = useLocalStorage<boolean>('nexus-smart-notifications-enabled', true);
+  const taskTemplates = useTaskTemplates();
+  const journalTemplates = useJournalTemplates();
+  const [videoBg, setVideoBg] = useLocalStorage<string | null>('future-video-bg', null);
+  const [videoEnabled, setVideoEnabled] = useLocalStorage<boolean>('future-video-enabled', true);
+  const [videoOpacity, setVideoOpacity] = useLocalStorage<number>('future-video-opacity', 15);
+
+  const [bgStyle, setBgStyle] = useLocalStorage<'aura' | 'static' | 'video'>('future-bg-style', 'aura');
+  const [theme, setTheme] = useLocalStorage<string>('future-theme', 'forest');
+  const [showAura, setShowAura] = useLocalStorage<boolean>('future-show-aura', true);
+  const [showNoise, setShowNoise] = useLocalStorage<boolean>('future-show-noise', false);
+  const [showGrid, setShowGrid] = useLocalStorage<boolean>('future-show-grid', false);
+
+  const [smartNotifsEnabled, setSmartNotifsEnabled] = useLocalStorage<boolean>('future-smart-notifications-enabled', true);
+
+  const [aiMode, setAiMode] = useLocalStorage<AIClientMode>('future-ai-mode', 'server');
+  const [aiBYOKKey, setAiBYOKKey] = useLocalStorage<string>('future-ai-byok-key', '');
+  const [weeklyRecapEnabled, setWeeklyRecapEnabled] = useLocalStorage<boolean>('future-weekly-recap-enabled', true);
+
   const [pinEnabled, setPinEnabled] = useState(() => pinLockService.hasPin());
   const [pinMode, setPinMode] = useState<'off' | 'set' | 'change'>('off');
   const [currentPin, setCurrentPin] = useState('');
@@ -85,6 +75,21 @@ const SettingsPage: React.FC = () => {
   const [confirmPin, setConfirmPin] = useState('');
   const [backupBusy, setBackupBusy] = useState(false);
   const [backups, setBackups] = useState<Array<{ name: string; path: string; createdAt: string | null }>>([]);
+  const [showAIKey, setShowAIKey] = useState(false);
+
+  const [templateTab, setTemplateTab] = useState<'tasks' | 'journal'>('tasks');
+
+  const [editingTaskTemplateId, setEditingTaskTemplateId] = useState<string | null>(null);
+  const [taskTemplateName, setTaskTemplateName] = useState('');
+  const [taskTemplateDescription, setTaskTemplateDescription] = useState('');
+  const [taskTemplateLines, setTaskTemplateLines] = useState('');
+
+  const [editingJournalTemplateId, setEditingJournalTemplateId] = useState<string | null>(null);
+  const [journalTemplateName, setJournalTemplateName] = useState('');
+  const [journalTemplateDescription, setJournalTemplateDescription] = useState('');
+  const [journalTemplateTags, setJournalTemplateTags] = useState('');
+  const [journalTemplateText, setJournalTemplateText] = useState('');
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +99,7 @@ const SettingsPage: React.FC = () => {
     reader.onload = () => {
       setVideoBg(reader.result as string);
       setVideoEnabled(true);
+      setBgStyle('video');
     };
     reader.readAsDataURL(file);
   };
@@ -101,15 +107,110 @@ const SettingsPage: React.FC = () => {
   const applyTheme = (id: string) => {
     setTheme(id);
     document.documentElement.setAttribute('data-theme', id);
-    // Back-compat: if older installs set a custom accent, clear it so presets stay consistent.
-    localStorage.removeItem('nexus-accent-color');
   };
 
   const resetAll = () => {
     if (!confirm('This will clear ALL app data. Are you sure?')) return;
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('nexus-'));
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('future-') || k.startsWith('future'));
     keys.forEach(k => localStorage.removeItem(k));
     window.location.reload();
+  };
+
+  const resetTaskTemplateForm = () => {
+    setEditingTaskTemplateId(null);
+    setTaskTemplateName('');
+    setTaskTemplateDescription('');
+    setTaskTemplateLines('');
+  };
+
+  const resetJournalTemplateForm = () => {
+    setEditingJournalTemplateId(null);
+    setJournalTemplateName('');
+    setJournalTemplateDescription('');
+    setJournalTemplateTags('');
+    setJournalTemplateText('');
+  };
+
+  const saveTaskTemplate = () => {
+    const name = taskTemplateName.trim();
+    if (!name) {
+      toast.error('Template name required');
+      return;
+    }
+
+    const tasks = taskTemplateLines
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(Boolean)
+      .map(text => ({ text, column: 'todo' as const, priority: 'medium' as const, subtasks: [] as Array<{ id: string; text: string; done: boolean }> }));
+
+    const payload = {
+      name,
+      description: taskTemplateDescription.trim(),
+      tasks,
+    };
+
+    if (editingTaskTemplateId) {
+      taskTemplates.updateTemplate.mutate(
+        { id: editingTaskTemplateId, ...payload },
+        {
+          onSuccess: () => {
+            toast.success('Task template updated');
+            resetTaskTemplateForm();
+          },
+          onError: () => toast.error('Failed to update template'),
+        }
+      );
+    } else {
+      taskTemplates.addTemplate.mutate(payload, {
+        onSuccess: () => {
+          toast.success('Task template created');
+          resetTaskTemplateForm();
+        },
+        onError: () => toast.error('Failed to create template'),
+      });
+    }
+  };
+
+  const saveJournalTemplate = () => {
+    const name = journalTemplateName.trim();
+    if (!name) {
+      toast.error('Template name required');
+      return;
+    }
+
+    const tags = journalTemplateTags
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean);
+
+    const payload = {
+      name,
+      description: journalTemplateDescription.trim(),
+      text: journalTemplateText,
+      tags,
+    };
+
+    if (editingJournalTemplateId) {
+      journalTemplates.updateTemplate.mutate(
+        { id: editingJournalTemplateId, ...payload },
+        {
+          onSuccess: () => {
+            toast.success('Journal template updated');
+            resetJournalTemplateForm();
+          },
+          onError: () => toast.error('Failed to update template'),
+        }
+      );
+    } else {
+      journalTemplates.addTemplate.mutate(payload, {
+        onSuccess: () => {
+          toast.success('Journal template created');
+          resetJournalTemplateForm();
+        },
+        onError: () => toast.error('Failed to create template'),
+      });
+    }
   };
 
   const handlePinSave = async () => {
@@ -121,7 +222,7 @@ const SettingsPage: React.FC = () => {
 
       if (pinEnabled) {
         await pinLockService.unlock(currentPin);
-        localStorage.removeItem('nexus-chat-history');
+        localStorage.removeItem('future-chat-history');
         await pinLockService.setPin(newPin);
         toast.success('PIN updated');
       } else {
@@ -198,15 +299,7 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  React.useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  React.useEffect(() => {
-    document.documentElement.setAttribute('data-noise', showNoise ? '1' : '0');
-    document.documentElement.setAttribute('data-grid', showGrid ? '1' : '0');
-    document.documentElement.setAttribute('data-blobs', showBlobs ? '1' : '0');
-  }, [showNoise, showGrid, showBlobs]);
+  
 
   React.useEffect(() => {
     refreshBackups();
@@ -240,7 +333,7 @@ const SettingsPage: React.FC = () => {
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => { setVideoBg(null); setVideoEnabled(false); }}
+                      onClick={() => { setVideoBg(null); setVideoEnabled(false); setBgStyle('aura'); }}
                       className="p-2 rounded-xl glass text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -330,10 +423,37 @@ const SettingsPage: React.FC = () => {
               <h3 className="text-sm font-semibold text-foreground">Visual Effects</h3>
             </div>
             <div className="space-y-3">
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-foreground">Background style</span>
+                </div>
+                <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/[0.08] p-1">
+                  {([
+                    { id: 'aura', label: 'Aura' },
+                    { id: 'static', label: 'Static' },
+                    { id: 'video', label: 'Video' },
+                  ] as const).map(opt => {
+                    const active = bgStyle === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => setBgStyle(opt.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                          active ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {[
-                { label: 'Noise Texture', icon: Sparkles, value: showNoise, set: setShowNoise },
-                { label: 'Grid Overlay', icon: Grid3X3, value: showGrid, set: setShowGrid },
-                { label: 'Aurora Blobs', icon: Sparkles, value: showBlobs, set: setShowBlobs },
+                { label: 'Aura', icon: Sparkles, value: showAura, set: setShowAura },
+                { label: 'Noise texture', icon: Sparkles, value: showNoise, set: setShowNoise },
+                { label: 'Grid overlay', icon: Grid3X3, value: showGrid, set: setShowGrid },
               ].map(pref => (
                 <div key={pref.label} className="flex items-center justify-between py-1">
                   <div className="flex items-center gap-2">
@@ -411,6 +531,280 @@ const SettingsPage: React.FC = () => {
           </GlassCard>
         </motion.div>
 
+        {/* Premium Intelligence */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Premium Intelligence</h3>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              AI is optional. Use the server provider, or bring your own key (stored only on this device).
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs text-foreground">AI mode</p>
+                  <p className="text-[10px] text-muted-foreground">Server / Off / BYOK OpenAI / BYOK Gemini</p>
+                </div>
+                <select
+                  value={aiMode}
+                  onChange={e => {
+                    const next = e.target.value as AIClientMode;
+                    setAiMode(next);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-xs outline-none focus:border-primary/40"
+                >
+                  <option value="server">Server</option>
+                  <option value="off">Off</option>
+                  <option value="openai">BYOK OpenAI</option>
+                  <option value="gemini">BYOK Gemini</option>
+                </select>
+              </div>
+
+              {(aiMode === 'openai' || aiMode === 'gemini') && (
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">API key (device-only)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type={showAIKey ? 'text' : 'password'}
+                      value={aiBYOKKey}
+                      onChange={e => {
+                        setAiBYOKKey(e.target.value);
+                      }}
+                      placeholder={aiMode === 'openai' ? 'sk-…' : 'AIza…'}
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowAIKey(v => !v)}
+                      className="px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground"
+                    >
+                      {showAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </motion.button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-xs text-foreground">Weekly recap (AI summary)</span>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setWeeklyRecapEnabled(v => !v)}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${
+                    weeklyRecapEnabled ? 'bg-primary/30' : 'bg-white/[0.06]'
+                  }`}
+                >
+                  <motion.div
+                    animate={{ x: weeklyRecapEnabled ? 20 : 2 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    className={`absolute top-0.5 w-4 h-4 rounded-full ${
+                      weeklyRecapEnabled ? 'bg-primary' : 'bg-muted-foreground'
+                    }`}
+                  />
+                </motion.button>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground">
+                BYOK calls go to this server, which forwards requests to your provider without storing your key.
+              </p>
+            </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* Templates */}
+        <motion.div variants={staggerItem}>
+          <GlassCard className="p-5" tilt={false}>
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Templates</h3>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">Synced across devices. Use templates for Tasks and Brain Dump.</p>
+
+            <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/[0.08] p-1 mb-3">
+              {([
+                { id: 'tasks', label: 'Tasks' },
+                { id: 'journal', label: 'Journal' },
+              ] as const).map(opt => {
+                const active = templateTab === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setTemplateTab(opt.id)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-colors ${
+                      active ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {templateTab === 'tasks' ? (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  {taskTemplates.templates.map(tpl => (
+                    <div key={tpl.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-foreground truncate">{tpl.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{tpl.description || `${tpl.tasks.length} tasks`}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setEditingTaskTemplateId(tpl.id);
+                            setTaskTemplateName(tpl.name);
+                            setTaskTemplateDescription(tpl.description || '');
+                            setTaskTemplateLines((tpl.tasks || []).map(x => x.text).join('\n'));
+                            setTemplateTab('tasks');
+                          }}
+                          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-[11px] font-semibold hover:bg-white/[0.06] transition-colors"
+                        >
+                          Edit
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => taskTemplates.deleteTemplate.mutate(tpl.id)}
+                          className="px-3 py-2 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {!user && (
+                    <p className="text-[11px] text-muted-foreground">Sign in to sync templates across devices.</p>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-white/[0.06] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-foreground">{editingTaskTemplateId ? 'Edit task template' : 'New task template'}</p>
+                    {(editingTaskTemplateId || taskTemplateName || taskTemplateLines) && (
+                      <button onClick={resetTaskTemplateForm} className="text-[10px] text-muted-foreground hover:text-foreground">Clear</button>
+                    )}
+                  </div>
+                  <input
+                    value={taskTemplateName}
+                    onChange={e => setTaskTemplateName(e.target.value)}
+                    placeholder="Name"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <input
+                    value={taskTemplateDescription}
+                    onChange={e => setTaskTemplateDescription(e.target.value)}
+                    placeholder="Description (optional)"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <textarea
+                    value={taskTemplateLines}
+                    onChange={e => setTaskTemplateLines(e.target.value)}
+                    placeholder="One task per line…"
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={saveTaskTemplate}
+                    disabled={!user || taskTemplates.addTemplate.isPending || taskTemplates.updateTemplate.isPending}
+                    className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                  >
+                    {editingTaskTemplateId ? 'Save changes' : 'Create template'}
+                  </motion.button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  {journalTemplates.templates.map(tpl => (
+                    <div key={tpl.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-foreground truncate">{tpl.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{tpl.description || (tpl.tags?.length ? tpl.tags.join(', ') : '—')}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setEditingJournalTemplateId(tpl.id);
+                            setJournalTemplateName(tpl.name);
+                            setJournalTemplateDescription(tpl.description || '');
+                            setJournalTemplateTags((tpl.tags || []).join(', '));
+                            setJournalTemplateText(tpl.text || '');
+                            setTemplateTab('journal');
+                          }}
+                          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-foreground text-[11px] font-semibold hover:bg-white/[0.06] transition-colors"
+                        >
+                          Edit
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => journalTemplates.deleteTemplate.mutate(tpl.id)}
+                          className="px-3 py-2 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {!user && (
+                    <p className="text-[11px] text-muted-foreground">Sign in to sync templates across devices.</p>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-white/[0.06] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-foreground">{editingJournalTemplateId ? 'Edit journal template' : 'New journal template'}</p>
+                    {(editingJournalTemplateId || journalTemplateName || journalTemplateText) && (
+                      <button onClick={resetJournalTemplateForm} className="text-[10px] text-muted-foreground hover:text-foreground">Clear</button>
+                    )}
+                  </div>
+                  <input
+                    value={journalTemplateName}
+                    onChange={e => setJournalTemplateName(e.target.value)}
+                    placeholder="Name"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <input
+                    value={journalTemplateDescription}
+                    onChange={e => setJournalTemplateDescription(e.target.value)}
+                    placeholder="Description (optional)"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <input
+                    value={journalTemplateTags}
+                    onChange={e => setJournalTemplateTags(e.target.value)}
+                    placeholder="Tags (comma separated)"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <textarea
+                    value={journalTemplateText}
+                    onChange={e => setJournalTemplateText(e.target.value)}
+                    placeholder="Template text…"
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground text-sm outline-none focus:border-primary/40 transition-colors"
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={saveJournalTemplate}
+                    disabled={!user || journalTemplates.addTemplate.isPending || journalTemplates.updateTemplate.isPending}
+                    className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                  >
+                    {editingJournalTemplateId ? 'Save changes' : 'Create template'}
+                  </motion.button>
+                </div>
+              </div>
+            )}
+          </GlassCard>
+        </motion.div>
+
         {/* App Lock */}
         <motion.div variants={staggerItem}>
           <GlassCard className="p-5" tilt={false}>
@@ -422,7 +816,7 @@ const SettingsPage: React.FC = () => {
             {!pinEnabled ? (
               <>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Add a quick PIN lock on this device. You\'ll unlock Nexus with 4–12 digits.
+                  Add a quick PIN lock on this device. You'll unlock Future with 4–12 digits.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
@@ -557,9 +951,9 @@ const SettingsPage: React.FC = () => {
               <p className="text-[11px] text-muted-foreground">No backups found yet.</p>
             )}
 
-            <p className="text-[10px] text-muted-foreground mt-3">
-              Requires Storage buckets: <span className="font-medium">nexus-backups</span> and <span className="font-medium">nexus-profile</span>.
-            </p>
+            <p className="text-[10px] text-muted-foreground">
+                Requires Storage buckets: <span className="font-medium">future-backups</span> and <span className="font-medium">future-profile</span>.
+              </p>
           </GlassCard>
         </motion.div>
 

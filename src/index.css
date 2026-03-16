@@ -200,101 +200,97 @@
   animation: shimmer-text 5s linear infinite;
 }
 
-.liquid-mesh-bg {
-  position: relative;
+/* Global background (Future Aura)
+   - Applies to every screen.
+   - Driven by theme tokens: --background/--primary/--accent.
+   - Controlled by documentElement attributes set by <FutureBackground/>:
+     data-bg-style: aura | static | video
+     data-aura: 1 | 0
+*/
+
+body {
   background: hsl(var(--background));
-  overflow: hidden;
 }
 
-.liquid-mesh-bg::before,
-.liquid-mesh-bg::after {
+html:not([data-bg-style]),
+html[data-bg-style='aura'],
+html[data-bg-style='static'] {
+  background: hsl(var(--background));
+}
+
+html:not([data-aura]),
+html[data-aura='1'] {
+  /* Primary + accent aura layers */
+}
+
+html:not([data-aura]) body::before,
+html[data-aura='1'] body::before,
+html:not([data-aura]) body::after,
+html[data-aura='1'] body::after {
   content: '';
   position: fixed;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.55;
+  inset: -22%;
   pointer-events: none;
   z-index: 0;
+  filter: blur(150px);
+  opacity: 0.10;
+  will-change: transform, opacity;
 }
 
-/* Aurora blobs are theme-aware: driven by --primary / --accent */
-.liquid-mesh-bg::before {
-  width: 650px;
-  height: 650px;
-  top: -150px;
-  left: -100px;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.32) 0%, hsl(var(--accent) / 0.16) 55%, transparent 72%);
-  animation: blob-float-1 25s ease-in-out infinite, color-shift 40s ease-in-out infinite;
+html:not([data-aura]) body::before,
+html[data-aura='1'] body::before {
+  background: radial-gradient(circle at 20% 18%, hsl(var(--primary) / 0.26) 0%, hsl(var(--accent) / 0.12) 55%, transparent 74%);
 }
 
-.liquid-mesh-bg::after {
-  width: 550px;
-  height: 550px;
-  bottom: -100px;
-  right: -80px;
-  background: radial-gradient(circle, hsl(var(--accent) / 0.22) 0%, hsl(var(--primary) / 0.12) 55%, transparent 72%);
-  animation: blob-float-2 30s ease-in-out infinite;
+html:not([data-aura]) body::after,
+html[data-aura='1'] body::after {
+  background: radial-gradient(circle at 80% 82%, hsl(var(--accent) / 0.20) 0%, hsl(var(--primary) / 0.10) 55%, transparent 74%);
 }
 
-.aurora-blob {
-  position: fixed;
-  width: 500px;
-  height: 500px;
-  top: 40%;
-  left: 50%;
-  border-radius: 50%;
-  filter: blur(140px);
-  opacity: 0.4;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.26) 0%, hsl(var(--accent) / 0.12) 55%, transparent 72%);
-  animation: blob-float-3 20s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
+@keyframes future-aura-pulse {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.12; }
 }
 
-.aurora-blob::after {
-  content: '';
-  position: fixed;
-  width: 400px;
-  height: 400px;
-  top: 5%;
-  right: 15%;
-  border-radius: 50%;
-  filter: blur(130px);
-  opacity: 0.3;
-  background: radial-gradient(circle, hsl(var(--accent) / 0.20) 0%, hsl(var(--primary) / 0.10) 55%, transparent 72%);
-  animation: blob-float-4 22s ease-in-out infinite;
-  pointer-events: none;
+@keyframes future-aura-drift-1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(10px, -14px, 0) scale(1.03); }
+  100% { transform: translate3d(-6px, 8px, 0) scale(1); }
 }
 
-.aurora-blob-2 {
-  position: fixed;
-  width: 350px;
-  height: 350px;
-  bottom: 20%;
-  left: 15%;
-  border-radius: 50%;
-  filter: blur(130px);
-  opacity: 0.25;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.18) 0%, hsl(var(--accent) / 0.10) 55%, transparent 72%);
-  animation: blob-float-5 28s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
+@keyframes future-aura-drift-2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-12px, 10px, 0) scale(1.02); }
+  100% { transform: translate3d(7px, -6px, 0) scale(1); }
 }
 
-/* Warm highlight blob (kept subtle so it doesn't fight the theme) */
-.aurora-blob-2::after {
-  content: '';
-  position: fixed;
-  width: 300px;
-  height: 300px;
-  top: 60%;
-  right: 8%;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.18;
-  background: radial-gradient(circle, hsl(42 70% 55% / 0.22) 0%, transparent 70%);
-  animation: blob-float-1 32s ease-in-out infinite reverse;
-  pointer-events: none;
+html:not([data-bg-style]) body::before,
+html[data-bg-style='aura'] body::before {
+  animation: future-aura-pulse 22s ease-in-out infinite, future-aura-drift-1 24s ease-in-out infinite;
+}
+
+html:not([data-bg-style]) body::after,
+html[data-bg-style='aura'] body::after {
+  animation: future-aura-pulse 24s ease-in-out infinite, future-aura-drift-2 26s ease-in-out infinite;
+}
+
+html[data-bg-style='static'] body::before,
+html[data-bg-style='static'] body::after {
+  animation: none;
+  opacity: 0.08;
+}
+
+html[data-bg-style='video'] body::before,
+html[data-bg-style='video'] body::after {
+  opacity: 0.06;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body::before,
+  html body::after {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* Noise texture */

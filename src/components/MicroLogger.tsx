@@ -35,7 +35,7 @@ const activities = [
 ];
 
 const MicroLogger: React.FC = () => {
-  const [entries, setEntries] = useLocalStorage<MoodEntry[]>('nexus-mood-log', []);
+  const [entries, setEntries] = useLocalStorage<MoodEntry[]>('future-mood-log', []);
   const [selectedMood, setSelectedMood] = React.useState<number | null>(null);
   const [selectedActivities, setSelectedActivities] = React.useState<string[]>([]);
 

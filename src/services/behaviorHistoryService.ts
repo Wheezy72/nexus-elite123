@@ -4,12 +4,17 @@ export interface BehaviorEntry {
   date: string; // YYYY-MM-DD
   mood?: number; // 1-5
   sleepHours?: number;
+  sleepMinutes?: number;
   tasksDone?: number;
   journalCount?: number;
   exerciseDone?: boolean;
   waterGlasses?: number;
   waterGoal?: number;
   spend?: number;
+  steps?: number;
+  activeMinutes?: number;
+  restingHr?: number;
+  hrvMs?: number;
 }
 
 type Period = 'week' | 'month' | 'quarter' | number;
@@ -67,7 +72,7 @@ export const behaviorHistoryService = {
     const base: Record<string, BehaviorEntry> = {};
     for (const k of dateKeys) base[k] = { date: k, tasksDone: 0, journalCount: 0, spend: 0 };
 
-    const [moodRes, sleepRes, tasksRes, journalRes, waterRes, habitLogsRes, habitsRes, financeRes] = await Promise.all([
+    const [moodRes, sleepRes, tasksRes, journalRes, waterRes, habitLogsRes, habitsRes, financeRes, healthRes] = await Promise.all([
       supabase
         .from('mood_entries')
         .select('date,emoji,label')
@@ -104,6 +109,12 @@ export const behaviorHistoryService = {
       supabase
         .from('finance_transactions')
         .select('date,amount')
+        .gte('date', toDateKey(startISO))
+        .lte('date', toDateKey(end)),
+      // Health metrics tables may not exist in older deployments; ignore errors.
+      supabase
+        .from('health_daily_metrics')
+        .select('date,steps,active_minutes,sleep_minutes,resting_hr,hrv_ms')
         .gte('date', toDateKey(startISO))
         .lte('date', toDateKey(end)),
     ]);
@@ -186,6 +197,23 @@ export const behaviorHistoryService = {
         const key = String(f.date);
         if (!base[key]) continue;
         base[key].spend = (base[key].spend || 0) + Number(f.amount);
+      }
+    }
+
+    if (!healthRes.error) {
+      for (const h of healthRes.data ?? []) {
+        const key = String(h.date);
+        if (!base[key]) continue;
+        if (typeof h.steps === 'number') base[key].steps = h.steps;
+        if (typeof h.active_minutes === 'number') base[key].activeMinutes = h.active_minutes;
+        if (typeof h.sleep_minutes === 'number') {
+          base[key].sleepMinutes = h.sleep_minutes;
+          if (typeof base[key].sleepHours !== 'number') {
+            base[key].sleepHours = Math.round((h.sleep_minutes / 60) * 10) / 10;
+          }
+        }
+        if (typeof h.resting_hr === 'number') base[key].restingHr = h.resting_hr;
+        if (typeof h.hrv_ms === 'number') base[key].hrvMs = h.hrv_ms;
       }
     }
 

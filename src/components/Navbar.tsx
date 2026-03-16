@@ -119,7 +119,7 @@ const Navbar: React.FC = () => {
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 animate-pulse" />
                 <Zap className="w-4 h-4 text-primary relative z-10" />
               </motion.div>
-              <span className="text-base font-bold tracking-tight text-foreground">Nexus Elite</span>
+              <span className="text-base font-bold tracking-tight text-foreground">Future</span>
             </NavLink>
 
             {/* Primary tabs (desktop) */}

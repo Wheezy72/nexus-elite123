@@ -13,7 +13,7 @@ interface SleepEntry {
 const TARGET_SLEEP = 8 * 60; // 8 hours in minutes
 
 const SleepDebt: React.FC = () => {
-  const [entries] = useLocalStorage<SleepEntry[]>('nexus-sleep-log', []);
+  const [entries] = useLocalStorage<SleepEntry[]>('future-sleep-log', []);
 
   // Get last 7 days
   const last7Keys = Array.from({ length: 7 }, (_, i) => {

@@ -1,4 +1,4 @@
-# Nexus Elite Mobile (Android)
+# Future Mobile (Android)
 
 This is an **Android-only** companion app that adds capabilities the web app cannot do on mobile browsers:
 
@@ -31,14 +31,14 @@ cd mobile
 npm run android
 ```
 
-This runs `expo run:android`, which creates a native development build including the `nexus-focus` native module.
+This runs `expo run:android`, which creates a native development build including the `future-focus` native module.
 
 ## Permissions
 
 The app will guide you to enable:
 
-- **Notification access**: Settings → Notifications → Notification access → "Nexus Elite"
-- **Do Not Disturb access**: Settings → Special app access → Do Not Disturb access → "Nexus Elite"
+- **Notification access**: Settings → Notifications → Notification access → "Future"
+- **Do Not Disturb access**: Settings → Special app access → Do Not Disturb access → "Future"
 
 ## Data & privacy
 
@@ -49,4 +49,4 @@ The app will guide you to enable:
 
 ## Notes
 
-- Android does not allow apps to "hold" notifications and re-deliver them later. Nexus logs blocked items and shows them in the in-app feed after focus ends.
+- Android does not allow apps to "hold" notifications and re-deliver them later. The app logs blocked items and shows them in the in-app feed after focus ends.
