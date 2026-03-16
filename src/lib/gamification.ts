@@ -16,11 +16,16 @@ const MAX_LEVEL = 50;
 function buildLevelThresholds() {
   const thresholds: number[] = [0];
   let total = 0;
+
+  // Exponential ramp: early levels feel quick, later levels require real consistency.
+  // lvl=1 -> 100xp, lvl=10 -> ~200xp, lvl=50 -> ~3800xp
   for (let lvl = 1; lvl < MAX_LEVEL; lvl++) {
-    const cost = 100 + (lvl - 1) * 25;
+    const raw = 100 * Math.pow(1.08, lvl - 1);
+    const cost = Math.max(100, Math.round(raw / 5) * 5);
     total += cost;
     thresholds.push(total);
   }
+
   return thresholds; // length 50, thresholds[i] = total xp required to be level i+1
 }
 
