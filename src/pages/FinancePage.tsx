@@ -144,16 +144,19 @@ const FinancePage: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
-      const enabled = await aiClientService.isAIEnabled();
-      if (!cancelled) setAiEnabled(enabled);
-    })();
-    return () => {
-      cancelled =;
+      try {
+        const enabled = await aiClientService.isAIEnabled();
+        if (!cancelled) setAiEnabled(enabled);
       } catch {
         // ignore
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // AI insights fetched below (after derived values are computed)
