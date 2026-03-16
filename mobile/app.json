@@ -5,9 +5,27 @@
     "version": "0.0.1",
     "orientation": "portrait",
     "platforms": ["android"],
+    "plugins": [
+      "expo-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 26,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ]
+    ],
     "android": {
       "package": "com.future.mobile",
-      "permissions": []
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_HEART_RATE"
+      ]
     }
   }
 }

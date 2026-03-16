@@ -17,7 +17,7 @@ A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Su
 - ⏰ **Reminders** — Scheduled with repeat (once/daily/weekly)
 - ⏱️ **Flow Timer** — Pomodoro-style focus sessions
 - 📊 **Stats** — Pomodoro + focus analytics
-- 📵 **Future Focus (Android app)** — Notification listener + focus-mode blocking + distraction analytics (local-only)
+- 📵 **Future Mobile (Android app)** — Focus-mode blocking + distraction analytics (local-only) + optional Health Connect sync (daily aggregates)
 - 📈 **Analytics** — Wellness patterns, trends, correlations (mood/sleep/exercise/tasks)
 - 🎓 **Study Planner** — AI-generated study plans + one-click task creation
 - 💸 **Finance** — Monthly budget + expense tracker
