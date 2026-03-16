@@ -150,7 +150,7 @@ export const backupService = {
       const { path, contentType, encryptedFileB64 } = backup.data.profilePhoto;
       const bytes = fromBase64(encryptedFileB64);
 
-      const { error } = await supabase.storage.from('future-profile').pload(path, new Blob([bytes], { type: contentType }), {
+      const { error } = await supabase.storage.from('future-profile').upload(path, new Blob([bytes], { type: contentType }), {
         upsert: true,
         contentType: 'application/octet-stream',
       });

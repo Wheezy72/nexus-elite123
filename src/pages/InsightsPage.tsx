@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Activity, BarChart3, Trophy, ArrowRight } from 'lucide-react';
 import PageLayout, { staggerContainer, staggerItem } from '@/components/PageLayout';
 import GlassCard from '@/components/GlassCard';
+import WeeklyReviewCard from '@/components/WeeklyReviewCard';
 
 const insightItems = [
   { to: '/analytics', label: 'Analytics', desc: 'Wellness trends, correlations, patterns.', icon: Activity, color: 'from-cyan-500/20 to-sky-500/20' },
@@ -17,6 +18,10 @@ const InsightsPage = () => {
         <motion.div variants={staggerItem}>
           <h1 className="text-2xl font-bold text-foreground">Insights</h1>
           <p className="text-xs text-muted-foreground mt-1">Trends and correlations live here.</p>
+        </motion.div>
+
+        <motion.div variants={staggerItem}>
+          <WeeklyReviewCard compact />
         </motion.div>
 
         <motion.div variants={staggerItem} className="grid grid-cols-1 sm:grid-cols-3 gap-3">

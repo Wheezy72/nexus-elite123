@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { decryptString, encryptString, type EncryptedPayload } from '@/lib/encryption';
 import { pinLockService } from '@/services/pinLockService';
 import { behavioralAIService } from '@/services/behavioralAIService';
+import { aiClientService } from '@/services/aiClientService';
 
 export interface ChatMessage {
   id: string;
@@ -101,6 +102,7 @@ export const chatService = {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...aiClientService.getRequestHeaders(),
       },
       body: JSON.stringify({ message, context: fullContext }),
     });
