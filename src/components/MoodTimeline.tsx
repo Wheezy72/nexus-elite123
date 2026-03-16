@@ -1,20 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useJournal } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
-
-interface JournalEntry {
-  id: string;
-  text: string;
-  mood: number | null;
-  timestamp: string;
-}
 
 const moodEmojis = ['😤', '😔', '😐', '🙂', '😄'];
 
 const MoodTimeline: React.FC = () => {
-  const [entries] = useLocalStorage<JournalEntry[]>('nexus-journal', []);
+  const { entries } = useJournal();
 
   const moodEntries = entries
     .filter(e => e.mood !== null)

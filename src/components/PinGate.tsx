@@ -76,7 +76,7 @@ const PinGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   <Lock className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-foreground">Unlock Nexus</h2>
+                  <h2 className="text-lg font-bold text-foreground">Unlock Future</h2>
                   <p className="text-xs text-muted-foreground">Quick PIN unlock (your data stays on your device).</p>
                 </div>
               </div>

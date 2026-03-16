@@ -4,26 +4,73 @@
 
 @layer base {
   :root {
+    /* "Forest premium" default palette (matches the green/cream reference) */
+    --background: 156 58% 8%;
+    --foreground: 42 35% 92%;
+    --card: 156 44% 10%;
+    --card-foreground: 42 35% 92%;
+    --popover: 156 44% 10%;
+    --popover-foreground: 42 35% 92%;
+
+    /* Main neon green */
+    --primary: 145 72% 46%;
+    --primary-foreground: 42 35% 92%;
+
+    /* Surfaces */
+    --secondary: 156 30% 14%;
+    --secondary-foreground: 42 35% 92%;
+    --muted: 156 26% 14%;
+    --muted-foreground: 42 18% 70%;
+
+    /* Secondary accent (slightly different green) */
+    --accent: 160 65% 34%;
+    --accent-foreground: 42 35% 92%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 42 35% 92%;
+    --border: 156 22% 18%;
+    --input: 156 22% 18%;
+    --ring: 145 72% 46%;
+    --radius: 0.75rem;
+
+    --sidebar-background: 156 58% 8%;
+    --sidebar-foreground: 42 35% 92%;
+    --sidebar-primary: 145 72% 46%;
+    --sidebar-primary-foreground: 42 35% 92%;
+    --sidebar-accent: 156 26% 14%;
+    --sidebar-accent-foreground: 42 35% 92%;
+    --sidebar-border: 156 22% 18%;
+    --sidebar-ring: 145 72% 46%;
+
+    /* Glass tint (separate from text so light theme still looks premium) */
+    --glass: 42 35% 92%;
+    --glass-border: 42 35% 92%;
+  }
+
+  /* Theme presets (full palette). Set by documentElement[data-theme]. */
+  :root[data-theme='midnight'],
+  :root[data-theme='indigo'] {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
+
     --primary: 226 70% 55.5%;
     --primary-foreground: 0 0% 98%;
+
     --secondary: 240 5% 15%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 5% 15%;
     --muted-foreground: 240 5% 64.9%;
+
     --accent: 280 60% 55%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+
     --border: 240 5% 17%;
     --input: 240 5% 17%;
     --ring: 226 70% 55.5%;
-    --radius: 0.75rem;
 
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -33,6 +80,45 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 226 70% 55.5%;
+
+    --glass: 0 0% 98%;
+    --glass-border: 0 0% 98%;
+  }
+
+  :root[data-theme='ivory'] {
+    --background: 40 35% 96%;
+    --foreground: 156 30% 12%;
+    --card: 40 25% 98%;
+    --card-foreground: 156 30% 12%;
+    --popover: 40 25% 98%;
+    --popover-foreground: 156 30% 12%;
+
+    --primary: 145 55% 35%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 40 25% 92%;
+    --secondary-foreground: 156 30% 12%;
+    --muted: 40 25% 92%;
+    --muted-foreground: 156 10% 35%;
+
+    --accent: 160 45% 28%;
+    --accent-foreground: 0 0% 98%;
+
+    --border: 156 10% 80%;
+    --input: 156 10% 80%;
+    --ring: 145 55% 35%;
+
+    --sidebar-background: 40 35% 96%;
+    --sidebar-foreground: 156 30% 12%;
+    --sidebar-primary: 145 55% 35%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 40 25% 92%;
+    --sidebar-accent-foreground: 156 30% 12%;
+    --sidebar-border: 156 10% 80%;
+    --sidebar-ring: 145 55% 35%;
+
+    --glass: 0 0% 100%;
+    --glass-border: 156 30% 12%;
   }
 }
 
@@ -100,7 +186,13 @@
   100% { background-position: 200% center; }
 }
 .shimmer-text {
-  background: linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary)), hsl(var(--accent)), hsl(var(--foreground)));
+  background: linear-gradient(
+    90deg,
+    hsl(var(--foreground)),
+    hsl(var(--primary)),
+    hsl(var(--accent)),
+    hsl(var(--foreground))
+  );
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -108,105 +200,97 @@
   animation: shimmer-text 5s linear infinite;
 }
 
-.liquid-mesh-bg {
-  position: relative;
-  background: hsl(240 10% 3.9%);
-  overflow: hidden;
+/* Global background (Future Aura)
+   - Applies to every screen.
+   - Driven by theme tokens: --background/--primary/--accent.
+   - Controlled by documentElement attributes set by <FutureBackground/>:
+     data-bg-style: aura | static | video
+     data-aura: 1 | 0
+*/
+
+body {
+  background: hsl(var(--background));
 }
 
-.liquid-mesh-bg::before,
-.liquid-mesh-bg::after {
+html:not([data-bg-style]),
+html[data-bg-style='aura'],
+html[data-bg-style='static'] {
+  background: hsl(var(--background));
+}
+
+html:not([data-aura]),
+html[data-aura='1'] {
+  /* Primary + accent aura layers */
+}
+
+html:not([data-aura]) body::before,
+html[data-aura='1'] body::before,
+html:not([data-aura]) body::after,
+html[data-aura='1'] body::after {
   content: '';
   position: fixed;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.55;
+  inset: -22%;
   pointer-events: none;
   z-index: 0;
+  filter: blur(150px);
+  opacity: 0.10;
+  will-change: transform, opacity;
 }
 
-/* Indigo blob - top left */
-.liquid-mesh-bg::before {
-  width: 650px;
-  height: 650px;
-  top: -150px;
-  left: -100px;
-  background: radial-gradient(circle, hsl(226 85% 40%) 0%, hsl(250 65% 25%) 50%, transparent 70%);
-  animation: blob-float-1 25s ease-in-out infinite, color-shift 40s ease-in-out infinite;
+html:not([data-aura]) body::before,
+html[data-aura='1'] body::before {
+  background: radial-gradient(circle at 20% 18%, hsl(var(--primary) / 0.26) 0%, hsl(var(--accent) / 0.12) 55%, transparent 74%);
 }
 
-/* Purple-magenta blob - bottom right */
-.liquid-mesh-bg::after {
-  width: 550px;
-  height: 550px;
-  bottom: -100px;
-  right: -80px;
-  background: radial-gradient(circle, hsl(280 70% 35%) 0%, hsl(320 60% 25%) 40%, transparent 70%);
-  animation: blob-float-2 30s ease-in-out infinite;
+html:not([data-aura]) body::after,
+html[data-aura='1'] body::after {
+  background: radial-gradient(circle at 80% 82%, hsl(var(--accent) / 0.20) 0%, hsl(var(--primary) / 0.10) 55%, transparent 74%);
 }
 
-/* Cyan-teal blob - center */
-.aurora-blob {
-  position: fixed;
-  width: 500px;
-  height: 500px;
-  top: 40%;
-  left: 50%;
-  border-radius: 50%;
-  filter: blur(140px);
-  opacity: 0.4;
-  background: radial-gradient(circle, hsl(190 80% 35%) 0%, hsl(220 60% 20%) 50%, transparent 70%);
-  animation: blob-float-3 20s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
+@keyframes future-aura-pulse {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.12; }
 }
 
-/* Pink-rose blob - top right */
-.aurora-blob::after {
-  content: '';
-  position: fixed;
-  width: 400px;
-  height: 400px;
-  top: 5%;
-  right: 15%;
-  border-radius: 50%;
-  filter: blur(130px);
-  opacity: 0.3;
-  background: radial-gradient(circle, hsl(330 80% 40%) 0%, hsl(350 65% 25%) 50%, transparent 70%);
-  animation: blob-float-4 22s ease-in-out infinite;
-  pointer-events: none;
+@keyframes future-aura-drift-1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(10px, -14px, 0) scale(1.03); }
+  100% { transform: translate3d(-6px, 8px, 0) scale(1); }
 }
 
-/* Emerald blob */
-.aurora-blob-2 {
-  position: fixed;
-  width: 350px;
-  height: 350px;
-  bottom: 20%;
-  left: 15%;
-  border-radius: 50%;
-  filter: blur(130px);
-  opacity: 0.25;
-  background: radial-gradient(circle, hsl(160 75% 30%) 0%, hsl(180 55% 18%) 50%, transparent 70%);
-  animation: blob-float-5 28s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
+@keyframes future-aura-drift-2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-12px, 10px, 0) scale(1.02); }
+  100% { transform: translate3d(7px, -6px, 0) scale(1); }
 }
 
-/* Extra warm orange/gold blob */
-.aurora-blob-2::after {
-  content: '';
-  position: fixed;
-  width: 300px;
-  height: 300px;
-  top: 60%;
-  right: 8%;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.2;
-  background: radial-gradient(circle, hsl(35 80% 40%) 0%, hsl(20 60% 25%) 50%, transparent 70%);
-  animation: blob-float-1 32s ease-in-out infinite reverse;
-  pointer-events: none;
+html:not([data-bg-style]) body::before,
+html[data-bg-style='aura'] body::before {
+  animation: future-aura-pulse 22s ease-in-out infinite, future-aura-drift-1 24s ease-in-out infinite;
+}
+
+html:not([data-bg-style]) body::after,
+html[data-bg-style='aura'] body::after {
+  animation: future-aura-pulse 24s ease-in-out infinite, future-aura-drift-2 26s ease-in-out infinite;
+}
+
+html[data-bg-style='static'] body::before,
+html[data-bg-style='static'] body::after {
+  animation: none;
+  opacity: 0.08;
+}
+
+html[data-bg-style='video'] body::before,
+html[data-bg-style='video'] body::after {
+  opacity: 0.06;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body::before,
+  html body::after {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* Noise texture */
@@ -229,8 +313,8 @@
   z-index: 0;
   opacity: 0.03;
   background-image:
-    linear-gradient(rgba(99,102,241,0.2) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99,102,241,0.2) 1px, transparent 1px);
+    linear-gradient(hsl(var(--primary) / 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary) / 0.22) 1px, transparent 1px);
   background-size: 60px 60px;
 }
 
@@ -245,25 +329,25 @@
 
 /* Glass card - premium liquid glass */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: hsl(var(--glass) / 0.05);
   backdrop-filter: blur(64px) saturate(180%);
   -webkit-backdrop-filter: blur(64px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid hsl(var(--glass-border) / 0.12);
 }
 
 .glass-card-premium {
-  background: rgba(255, 255, 255, 0.05);
+  background: hsl(var(--glass) / 0.05);
   backdrop-filter: blur(64px) saturate(180%);
   -webkit-backdrop-filter: blur(64px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid hsl(var(--glass-border) / 0.12);
   transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
 }
 .glass-card-premium:hover {
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: hsl(var(--glass-border) / 0.18);
   box-shadow:
-    0 0 40px rgba(99, 102, 241, 0.08),
+    0 0 40px hsl(var(--primary) / 0.10),
     0 8px 32px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    inset 0 1px 0 hsl(var(--glass-border) / 0.08);
 }
 
 /* Ambient glow utilities */
@@ -290,19 +374,19 @@ h1, h2, h3 {
 
 /* Navbar glass - premium */
 .glass-nav-premium {
-  background: rgba(255, 255, 255, 0.03);
+  background: hsl(var(--glass) / 0.03);
   backdrop-filter: blur(64px) saturate(200%);
   -webkit-backdrop-filter: blur(64px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid hsl(var(--glass-border) / 0.10);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 hsl(var(--glass-border) / 0.05);
 }
 
 /* Legacy nav glass */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.03);
+  background: hsl(var(--glass) / 0.03);
   backdrop-filter: blur(50px) saturate(180%);
   -webkit-backdrop-filter: blur(50px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid hsl(var(--glass-border) / 0.08);
 }
 
 /* Vision shimmer */
@@ -317,7 +401,14 @@ h1, h2, h3 {
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(99,102,241,0.1), rgba(168,85,247,0.12), rgba(236,72,153,0.1), rgba(99,102,241,0.1), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.10),
+    hsl(var(--accent) / 0.12),
+    hsl(var(--primary) / 0.10),
+    transparent
+  );
   background-size: 200% 100%;
   animation: shimmer-iris 20s linear forwards;
 }

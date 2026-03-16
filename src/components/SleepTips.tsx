@@ -27,7 +27,7 @@ const TIPS = [
 ];
 
 const SleepTips: React.FC = () => {
-  const [entries] = useLocalStorage<SleepEntry[]>('nexus-sleep-log', []);
+  const [entries] = useLocalStorage<SleepEntry[]>('future-sleep-log', []);
   const [tipIndex, setTipIndex] = useState(0);
 
   // Calculate averages from last 7 entries

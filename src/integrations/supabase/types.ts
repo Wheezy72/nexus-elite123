@@ -487,6 +487,111 @@ export type Database = {
         }
         Relationships: []
       }
+      health_daily_metrics: {
+        Row: {
+          active_minutes: number | null
+          created_at: string
+          date: string
+          hrv_ms: number | null
+          id: string
+          resting_hr: number | null
+          sleep_minutes: number | null
+          source: string
+          steps: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_minutes?: number | null
+          created_at?: string
+          date: string
+          hrv_ms?: number | null
+          id?: string
+          resting_hr?: number | null
+          sleep_minutes?: number | null
+          source?: string
+          steps?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_minutes?: number | null
+          created_at?: string
+          date?: string
+          hrv_ms?: number | null
+          id?: string
+          resting_hr?: number | null
+          sleep_minutes?: number | null
+          source?: string
+          steps?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      task_templates: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+          tasks: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          tasks?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          tasks?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_templates: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+          tags: string[]
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          tags?: string[]
+          text?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          tags?: string[]
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

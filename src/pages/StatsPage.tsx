@@ -17,7 +17,7 @@ interface FlowSession {
 const COLORS = ['hsl(var(--primary))', 'hsl(280 60% 55%)', 'hsl(200 70% 55%)', 'hsl(340 60% 55%)'];
 
 const StatsPage = () => {
-  const [sessions] = useLocalStorage<FlowSession[]>('nexus-flow-sessions', []);
+  const [sessions] = useLocalStorage<FlowSession[]>('future-flow-sessions', []);
 
   const focusSessions = sessions.filter(s => s.type === 'focus');
   const totalFocusMin = Math.round(focusSessions.reduce((s, x) => s + x.duration, 0) / 60);

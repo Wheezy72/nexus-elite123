@@ -7,6 +7,7 @@ import GlassCard from '@/components/GlassCard';
 import DailyQuotes from '@/components/DailyQuotes';
 import ReminderManager from '@/components/ReminderManager';
 import MoodQuickLog from '@/components/MoodQuickLog';
+import WeeklyReviewCard, { getShouldShowWeeklyReview } from '@/components/WeeklyReviewCard';
 import { useInAppReminders, useScheduledReminders, requestNotificationPermission } from '@/hooks/useReminders';
 import { useTasks, useWater } from '@/hooks/useCloudData';
 import { behaviorHistoryService } from '@/services/behaviorHistoryService';
@@ -21,6 +22,7 @@ const Index = () => {
 
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<Awaited<ReturnType<typeof behaviorHistoryService.getBehaviorHistory>>>([]);
+  const [showWeekly, setShowWeekly] = useState(() => getShouldShowWeeklyReview());
 
   useEffect(() => {
     requestNotificationPermission();
@@ -116,6 +118,12 @@ const Index = () => {
             </div>
           </GlassCard>
         </motion.div>
+
+        {showWeekly && (
+          <motion.div variants={staggerItem}>
+            <WeeklyReviewCard />
+          </motion.div>
+        )}
 
         {/* Top priority */}
         <motion.div variants={staggerItem}>

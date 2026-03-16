@@ -10,8 +10,8 @@ export interface NotificationPayload {
   action?: { label: string; target: string };
 }
 
-const ENABLED_KEY = 'nexus-smart-notifications-enabled';
-const LAST_RUN_KEY = 'nexus-smart-notifications-last-run';
+const ENABLED_KEY = 'future-smart-notifications-enabled';
+const LAST_RUN_KEY = 'future-smart-notifications-last-run';
 
 function isEnabled() {
   const raw = localStorage.getItem(ENABLED_KEY);
@@ -42,7 +42,7 @@ function sendNotification(notif: NotificationPayload) {
 
   new Notification(notif.title, {
     body: notif.body,
-    tag: `nexus-${notif.type}`,
+    tag: `future-${notif.type}`,
     requireInteraction: notif.priority === 'high',
   });
 }
@@ -73,7 +73,7 @@ export const notificationService = {
         priority: 'high',
         title: 'Quick check-in',
         body: 'Your week looks heavy. Want a tiny plan for today?',
-        action: { label: 'Talk to Nexus', target: '/chat' },
+        action: { label: 'Talk to Future', target: '/chat' },
       });
     }
 

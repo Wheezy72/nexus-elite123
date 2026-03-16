@@ -8,7 +8,7 @@ export interface UserAIPreferenceProfile {
   updatedAt: string;
 }
 
-const CACHE_KEY = 'nexus-ai-user-profile';
+const CACHE_KEY = 'future-ai-user-profile';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 function toDateKey(d: Date) {

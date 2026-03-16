@@ -119,7 +119,7 @@ const Navbar: React.FC = () => {
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 animate-pulse" />
                 <Zap className="w-4 h-4 text-primary relative z-10" />
               </motion.div>
-              <span className="text-base font-bold tracking-tight text-foreground">Nexus Elite</span>
+              <span className="text-base font-bold tracking-tight text-foreground">Future</span>
             </NavLink>
 
             {/* Primary tabs (desktop) */}
@@ -132,7 +132,7 @@ const Navbar: React.FC = () => {
                     to={tab.to}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                       active
-                        ? 'bg-primary/15 text-primary shadow-[0_0_20px_rgba(99,102,241,0.12)]'
+                        ? 'bg-primary/15 text-primary shadow-[0_0_20px_hsl(var(--primary)_/_0.18)]'
                         : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
                     }`}
                   >

@@ -44,7 +44,7 @@ interface GratitudeEntry {
 }
 
 const JournalExtras: React.FC = () => {
-  const [gratitudes, setGratitudes] = useLocalStorage<GratitudeEntry[]>('nexus-gratitude', []);
+  const [gratitudes, setGratitudes] = useLocalStorage<GratitudeEntry[]>('future-gratitude', []);
   const [gratitudeInput, setGratitudeInput] = useState(['', '', '']);
   const [prompt, setPrompt] = useState(() => WRITING_PROMPTS[Math.floor(Math.random() * WRITING_PROMPTS.length)]);
   const [affirmation] = useState(() => AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)]);

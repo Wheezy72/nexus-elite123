@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, X, CheckCircle2, Circle, Trash2, ListTodo, ArrowRight, Clock,
-  Filter, Calendar, ChevronDown, ChevronUp, Square, CheckSquare
+  Filter, Calendar, ChevronDown, ChevronUp, Square, CheckSquare, Sparkles
 } from 'lucide-react';
-import { useTasks } from '@/hooks/useCloudData';
+import { useTaskTemplates, useTasks } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 import EmptyState from './EmptyState';
 import { rewardAction } from '@/lib/rewards';
+import { toast } from 'sonner';
 
 interface SubTask {
   id: string;
@@ -39,6 +40,55 @@ const PRIORITIES = [
 
 const priorityOrder = { high: 0, medium: 1, low: 2 };
 
+const TASK_TEMPLATES: Array<{
+  id: string;
+  name: string;
+  desc: string;
+  tasks: Array<Omit<Task, 'id' | 'createdAt'>>;
+}> = [
+  {
+    id: 'daily-reset',
+    name: 'Daily Reset',
+    desc: 'Quick setup for a balanced day (ADHD-friendly).',
+    tasks: [
+      { text: 'Pick 1 priority task (10 min)', column: 'todo', priority: 'high', subtasks: [] },
+      { text: '2-minute brain dump', column: 'todo', priority: 'medium', subtasks: [] },
+      { text: 'Start a 25-min focus session', column: 'todo', priority: 'medium', subtasks: [] },
+      { text: 'Quick reset: water + stretch', column: 'todo', priority: 'low', subtasks: [] },
+    ],
+  },
+  {
+    id: 'study-sprint',
+    name: 'Study Sprint',
+    desc: 'Break a study session into tiny wins.',
+    tasks: [
+      {
+        text: 'Define the goal (what does “done” look like?)',
+        column: 'todo',
+        priority: 'high',
+        subtasks: [
+          { id: crypto.randomUUID(), text: 'Pick topic', done: false },
+          { id: crypto.randomUUID(), text: 'Pick timebox (25/45)', done: false },
+        ],
+      },
+      { text: 'Study block 1 (Pomodoro)', column: 'todo', priority: 'medium', subtasks: [] },
+      { text: 'Active recall (5 questions)', column: 'todo', priority: 'medium', subtasks: [] },
+      { text: 'Submit / save progress', column: 'todo', priority: 'low', subtasks: [] },
+    ],
+  },
+  {
+    id: 'life-admin',
+    name: 'Life Admin',
+    desc: 'Clean up tasks you’ve been avoiding.',
+    tasks: [
+      { text: 'Email / messages: clear 10', column: 'todo', priority: 'medium', subtasks: [] },
+      { text: 'Pay / check one bill', column: 'todo', priority: 'medium', subtasks: [] },
+      { text: 'Schedule 1 appointment / reminder', column: 'todo', priority: 'low', subtasks: [] },
+      { text: 'Tidy workspace (5 min)', column: 'todo', priority: 'low', subtasks: [] },
+    ],
+  },
+];
+
 const colStagger = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.05 } },
@@ -50,7 +100,8 @@ const cardAnim = {
 };
 
 const TaskBoard: React.FC = () => {
-  const { tasks, addTask: addTaskMut, updateTask: updateTaskMut, deleteTask: deleteTaskMut } = useTasks();
+  const { tasks, addTask: addTaskMut, addTasks: addTasksMut, updateTask: updateTaskMut, deleteTask: deleteTaskMut } = useTasks();
+  const taskTemplates = useTaskTemplates();
   const [newText, setNewText] = useState('');
   const [newPriority, setNewPriority] = useState<Task['priority']>('medium');
   const [newDueDate, setNewDueDate] = useState('');
@@ -58,6 +109,7 @@ const TaskBoard: React.FC = () => {
   const [filter, setFilter] = useState<'all' | Task['priority']>('all');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [subtaskInputs, setSubtaskInputs] = useState<Record<string, string>>({});
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const addTask = () => {
     if (!newText.trim()) return;
@@ -135,6 +187,67 @@ const TaskBoard: React.FC = () => {
   const totalTasks = tasks.length;
   const today = new Date().toISOString().split('T')[0];
 
+  const normalizeTemplateTasks = (value: unknown): Array<Omit<Task, 'id' | 'createdAt'>> => {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map((t: any) => {
+        const col = t?.column;
+        const column: Task['column'] = col === 'progress' || col === 'done' ? col : 'todo';
+
+        const pr = t?.priority;
+        const priority: Task['priority'] = pr === 'low' || pr === 'high' ? pr : 'medium';
+
+        const subtasks = Array.isArray(t?.subtasks)
+          ? t.subtasks
+              .map((s: any) => ({
+                id: typeof s?.id === 'string' ? s.id : crypto.randomUUID(),
+                text: String(s?.text || '').trim(),
+                done: Boolean(s?.done),
+              }))
+              .filter((s: SubTask) => s.text)
+          : [];
+
+        const text = String(t?.text || '').trim();
+        if (!text) return null;
+
+        return {
+          text,
+          column,
+          priority,
+          dueDate: typeof t?.dueDate === 'string' ? t.dueDate : undefined,
+          subtasks,
+        };
+      })
+      .filter(Boolean) as Array<Omit<Task, 'id' | 'createdAt'>>;
+  };
+
+  const templateItems = [
+    ...TASK_TEMPLATES,
+    ...taskTemplates.templates.map(t => ({
+      id: `cloud-${t.id}`,
+      name: t.name,
+      desc: t.description || 'Custom template',
+      tasks: normalizeTemplateTasks(t.tasks),
+    })),
+  ];
+
+  const applyTemplate = (templateId: string) => {
+    const tpl = templateItems.find(t => t.id === templateId);
+    if (!tpl) return;
+
+    addTasksMut.mutate(tpl.tasks, {
+      onSuccess: () => {
+        toast.success(`Template added: ${tpl.name}`);
+      },
+      onError: () => {
+        toast.error('Could not apply template. Try again.');
+      },
+    });
+
+    setShowTemplates(false);
+  };
+
   return (
     <GlassCard className="p-4 sm:p-6" tilt={false}>
       {/* Header */}
@@ -145,7 +258,7 @@ const TaskBoard: React.FC = () => {
             <p className="text-[10px] text-muted-foreground mt-0.5">{totalDone}/{totalTasks} completed</p>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 relative">
           {totalTasks > 0 && (
             <div className="flex items-center gap-0.5 mr-1">
               {['all', 'high', 'medium', 'low'].map(f => (
@@ -162,9 +275,53 @@ const TaskBoard: React.FC = () => {
               ))}
             </div>
           )}
+
+          <div className="relative">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowTemplates(v => !v)}
+              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                showTemplates ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Templates"
+            >
+              <Sparkles className="w-4 h-4" />
+            </motion.button>
+
+            <AnimatePresence>
+              {showTemplates && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-64 glass rounded-2xl border border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.35)] p-2 z-10"
+                >
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">Templates</p>
+                  <div className="space-y-1">
+                    {templateItems.map(t => (
+                      <motion.button
+                        key={t.id}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => applyTemplate(t.id)}
+                        className="w-full text-left px-2 py-2 rounded-xl hover:bg-white/[0.04] transition-colors"
+                      >
+                        <p className="text-xs font-semibold text-foreground">{t.name}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</p>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => setShowAdd(!showAdd)}
+            onClick={() => {
+              setShowTemplates(false);
+              setShowAdd(!showAdd);
+            }}
             className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
               showAdd ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -270,7 +427,7 @@ const TaskBoard: React.FC = () => {
                             exit="exit"
                             className={`glass rounded-lg p-2.5 group border-l-2 ${priorityInfo?.border} ${
                               isOverdue ? 'shadow-[0_0_12px_rgba(239,68,68,0.15)]' : ''
-                            } hover:shadow-[0_0_15px_rgba(99,102,241,0.08)] transition-shadow`}
+                            } hover:shadow-[0_0_15px_hsl(var(--primary)_/_0.10)] transition-shadow`}
                           >
                             <div className="flex items-start gap-2">
                               {next && (

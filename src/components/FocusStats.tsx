@@ -20,8 +20,8 @@ interface MoodEntry {
 }
 
 const FocusStats: React.FC = () => {
-  const [sessions] = useLocalStorage<FlowSession[]>('nexus-flow-sessions', []);
-  const [moodEntries] = useLocalStorage<MoodEntry[]>('nexus-mood-log', []);
+  const [sessions] = useLocalStorage<FlowSession[]>('future-flow-sessions', []);
+  const [moodEntries] = useLocalStorage<MoodEntry[]>('future-mood-log', []);
 
   const stats = useMemo(() => {
     const now = new Date();

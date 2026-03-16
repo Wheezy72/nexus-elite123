@@ -72,7 +72,7 @@ const ProfilePage: React.FC = () => {
 
       try {
         setPhotoBusy(true);
-        const { data, error } = await supabase.storage.from('nexus-profile').download(path);
+        const { data, error } = await supabase.storage.from('future-profile').download(path);
         if (error) throw error;
 
         const buf = new Uint8Array(await data.arrayBuffer());
@@ -136,7 +136,7 @@ const ProfilePage: React.FC = () => {
       const container = new Blob([packed], { type: 'application/octet-stream' });
 
       const path = `${user.id}/profile-photo.bin`;
-      const { error: uploadError } = await supabase.storage.from('nexus-profile').upload(path, container, {
+      const { error: uploadError } = await supabase.storage.from('future-profile').upload(path, container, {
         upsert: true,
         contentType: 'application/octet-stream',
       });
@@ -164,7 +164,7 @@ const ProfilePage: React.FC = () => {
 
     setPhotoBusy(true);
     try {
-      await supabase.storage.from('nexus-profile').remove([path]);
+      await supabase.storage.from('future-profile').remove([path]);
       const { error } = await supabase.from('profiles').update({ profile_photo_path: null }).eq('user_id', user.id);
       if (error) throw error;
       await refreshProfile();
@@ -271,7 +271,7 @@ const ProfilePage: React.FC = () => {
                   onClick={() => setSelectedAvatar(avatar.id)}
                   className={`relative w-full aspect-square rounded-xl bg-gradient-to-br ${avatar.bg} border flex items-center justify-center text-xl transition-all ${
                     selectedAvatar === avatar.id
-                      ? 'border-primary ring-2 ring-primary/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                      ? 'border-primary ring-2 ring-primary/30 shadow-[0_0_15px_hsl(var(--primary)_/_0.22)]'
                       : 'border-white/[0.06] opacity-60 hover:opacity-100'
                   }`}
                 >

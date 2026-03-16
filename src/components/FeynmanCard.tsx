@@ -23,7 +23,7 @@ const vaultItem = {
 };
 
 const FeynmanCard: React.FC = () => {
-  const [vault, setVault] = useLocalStorage<Reflection[]>('nexus-knowledge-vault', []);
+  const [vault, setVault] = useLocalStorage<Reflection[]>('future-knowledge-vault', []);
   const [isFlipped, setIsFlipped] = useState(false);
   const [front, setFront] = useState('');
   const [back, setBack] = useState('');
@@ -106,7 +106,7 @@ const FeynmanCard: React.FC = () => {
               whileTap={{ scale: 0.85 }}
               whileHover={{ scale: 1.02 }}
               onClick={() => setIsFlipped(!isFlipped)}
-              className="flex-1 py-2 rounded-xl glass text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 hover:shadow-[0_0_15px_rgba(99,102,241,0.1)] transition-shadow"
+              className="flex-1 py-2 rounded-xl glass text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 hover:shadow-[0_0_15px_hsl(var(--primary)_/_0.14)] transition-shadow"
             >
               <RotateCcw className="w-3.5 h-3.5" /> Flip
             </motion.button>

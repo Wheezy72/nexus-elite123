@@ -3,8 +3,8 @@ import { decryptString, encryptString, fromBase64, toBase64 } from '@/lib/encryp
 import { packEncryptedContainer, unpackEncryptedContainer } from '@/lib/encryptedContainer';
 import { pinLockService } from '@/services/pinLockService';
 
-const BACKUP_BUCKET = 'nexus-backups';
-const LAST_BACKUP_KEY = 'nexus-last-backup-at';
+const BACKUP_BUCKET = 'future-backups';
+const LAST_BACKUP_KEY = 'future-last-backup-at';
 
 export interface EncryptedBackup {
   v: 1;
@@ -32,7 +32,7 @@ async function getUserId() {
 }
 
 async function downloadEncryptedProfilePhoto(path: string) {
-  const { data, error } = await supabase.storage.from('nexus-profile').download(path);
+  const { data, error } = await supabase.storage.from('future-profile').download(path);
   if (error) throw error;
   const buf = new Uint8Array(await data.arrayBuffer());
   return {
@@ -54,7 +54,7 @@ async function getProfilePhotoPath(userId: string) {
 
 export const backupService = {
   async createBackupObject(profilePhotoPath: string | null): Promise<EncryptedBackup> {
-    const rawChat = localStorage.getItem('nexus-chat-history');
+    const rawChat = localStorage.getItem('future-chat-history');
     const chatHistoryBlob = rawChat ? JSON.parse(rawChat) : null;
 
     let profilePhoto: EncryptedBackup['data']['profilePhoto'] = null;
@@ -139,7 +139,7 @@ export const backupService = {
   async restoreFromBackup(backup: EncryptedBackup) {
     // Restore chat history (local device)
     if (backup.data.chatHistoryBlob) {
-      localStorage.setItem('nexus-chat-history', JSON.stringify(backup.data.chatHistoryBlob));
+      localStorage.setItem('future-chat-history', JSON.stringify(backup.data.chatHistoryBlob));
     }
 
     // Restore encrypted profile photo back into storage (still encrypted)
@@ -150,7 +150,7 @@ export const backupService = {
       const { path, contentType, encryptedFileB64 } = backup.data.profilePhoto;
       const bytes = fromBase64(encryptedFileB64);
 
-      const { error } = await supabase.storage.from('nexus-profile').upload(path, new Blob([bytes], { type: contentType }), {
+      const { error } = await supabase.storage.from('future-profile').upload(path, new Blob([bytes], { type: contentType }), {
         upsert: true,
         contentType: 'application/octet-stream',
       });

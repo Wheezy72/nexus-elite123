@@ -35,9 +35,9 @@ const noiseChannels: { key: NoiseType; label: string; icon: React.ElementType }[
 ];
 
 const FlowEngine: React.FC = () => {
-  const [sessions, setSessions] = useLocalStorage<FlowSession[]>('nexus-flow-sessions', []);
-  const [focusMin, setFocusMin] = useLocalStorage<number>('nexus-focus-min', 25);
-  const [breakMin, setBreakMin] = useLocalStorage<number>('nexus-break-min', 5);
+  const [sessions, setSessions] = useLocalStorage<FlowSession[]>('future-flow-sessions', []);
+  const [focusMin, setFocusMin] = useLocalStorage<number>('future-focus-min', 25);
+  const [breakMin, setBreakMin] = useLocalStorage<number>('future-break-min', 5);
 
   const [timeLeft, setTimeLeft] = useState(focusMin * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -46,15 +46,15 @@ const FlowEngine: React.FC = () => {
   const [showAudio, setShowAudio] = useState(false);
 
   // Audio config
-  const [noiseVolumes, setNoiseVolumes] = useLocalStorage<Record<NoiseType, number>>('nexus-noise-vols', {
+  const [noiseVolumes, setNoiseVolumes] = useLocalStorage<Record<NoiseType, number>>('future-noise-vols', {
     brown: 50, white: 0, green: 0, rain: 40,
   });
-  const [tone, setTone] = useLocalStorage<number>('nexus-tone', 50);
+  const [tone, setTone] = useLocalStorage<number>('future-tone', 50);
   const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
   const [customAudioName, setCustomAudioName] = useState<string | null>(null);
-  const [customVolume, setCustomVolume] = useLocalStorage<number>('nexus-custom-vol', 50);
+  const [customVolume, setCustomVolume] = useLocalStorage<number>('future-custom-vol', 50);
   const [audioOn, setAudioOn] = useState(false);
-  const [notificationsOn, setNotificationsOn] = useLocalStorage<boolean>('nexus-notif-on', true);
+  const [notificationsOn, setNotificationsOn] = useLocalStorage<boolean>('future-notif-on', true);
 
   // Custom audio per channel
   const [uploadChannel, setUploadChannel] = useState<NoiseType | 'custom'>('custom');

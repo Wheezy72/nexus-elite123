@@ -38,6 +38,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { aiClientService } from '@/services/aiClientService';
 import {
   buildBasicAlerts,
   buildSpendHeatmap,
@@ -142,12 +143,13 @@ const FinancePage: React.FC = () => {
   const insightTimer = useRef<number | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      try {
-        const resp = await fetch('/api/ai/status');
-        if (!resp.ok) return;
-        const data = await resp.json();
-        setAiEnabled(Boolean(data.enabled));
+      const enabled = await aiClientService.isAIEnabled();
+      if (!cancelled) setAiEnabled(enabled);
+    })();
+    return () => {
+      cancelled =;
       } catch {
         // ignore
       }
@@ -176,7 +178,7 @@ const FinancePage: React.FC = () => {
       try {
         const resp = await fetch('/api/ai/finance/insights', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...aiClientService.getRequestHeaders() },
           body: JSON.stringify({ monthKey: month, budget: budgetValue, totalSpent, byCategory }),
         });
         if (!resp.ok) return;
@@ -296,7 +298,7 @@ const FinancePage: React.FC = () => {
     try {
       const resp = await fetch('/api/ai/finance/categorize', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...aiClientService.getRequestHeaders() },
         body: JSON.stringify({
           merchant: merchantOrNote,
           categories: mergedCategories.map(c => c.name),
@@ -318,23 +320,61 @@ const FinancePage: React.FC = () => {
     const [busy, setBusy] = useState(false);
     const [items, setItems] = useState<Array<ParsedPdfTransaction & { category: string; selected: boolean }>>([]);
 
+    const loadPdfJs = async () => {
+      const w = window as any;
+      if (w.pdfjsLib) return w.pdfjsLib;
+
+      await new Promise<void>((resolve, reject) => {
+        const el = document.createElement('script');
+        el.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.js';
+        el.async = true;
+        el.onload = () => resolve();
+        el.onerror = () => reject(new Error('Failed to load PDF.js'));
+        document.head.appendChild(el);
+      });
+
+      if (!w.pdfjsLib) throw new Error('PDF.js not available');
+      w.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.js';
+      return w.pdfjsLib;
+    };
+
     const pick = () => inputRef.current?.click();
 
     const onFile = async (file: File) => {
+      if (!navigator.onLine) {
+        toast.error('PDF import needs an internet connection (loads PDF.js from CDN)');
+        return;
+      }
+
       setBusy(true);
       try {
-        const text = await readPdfText(file);
-        const parsed = extractPdfTransactionsFromText(text);
+        const pdfjs = await loadPdfJs();
+        const buf = await file.arrayBuffer();
+        const doc = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise;
 
-        const withCats = await Promise.all(
-          parsed.map(async p => {
-            const cat = await suggestCategory(p.merchant);
+        const parts: string[] = [];
+        for (let i = 1; i <= doc.numPages; i++) {
+          const page = await doc.getPage(i);
+          const content = await page.getTextContent();
+          const lines = (content.items || [])
+            .map((it: any) => (typeof it.str === 'string' ? it.str : ''))
+            .filter(Boolean);
+          parts.push(lines.join('\n'));
+        }
+
+        const text = parts.join('\n');
+        const extracted = extractPdfTransactionsFromText(text);
+
+        const hydrated = await Promise.all(
+          extracted.map(async tx => {
+            const cat = await suggestCategory(tx.merchant);
             await ensureCategoryExists(cat);
-            return { ...p, category: cat, selected: true };
+            return { ...tx, category: cat, selected: true };
           })
         );
 
-        setItems(withCats);
+        setItems(hydrated);
+        if (!hydrated.length) toast.error('No transactions found in that PDF');
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Failed to read PDF');
       } finally {
@@ -344,18 +384,10 @@ const FinancePage: React.FC = () => {
 
     const importSelected = async () => {
       const chosen = items.filter(i => i.selected);
-      if (!chosen.length) return;
-
       for (const it of chosen) {
         const txDate = it.date || new Date().toISOString().split('T')[0];
-        await current.addTransaction.mutateAsync({
-          date: txDate,
-          amount: it.amount,
-          category: it.category,
-          note: it.merchant,
-        });
+        await current.addTransaction.mutateAsync({ date: txDate, amount: it.amount, category: it.category, note: it.merchant });
       }
-
       toast.success(navigator.onLine ? 'Imported' : 'Imported offline (will sync)');
       setItems([]);
     };
@@ -837,7 +869,7 @@ const FinancePage: React.FC = () => {
                           <div className="grid grid-cols-6 gap-2 flex-1">
                             {row.map((v, c) => {
                               const intensity = heat.max ? v / heat.max : 0;
-                              const bg = `rgba(99,102,241,${Math.min(0.85, 0.08 + intensity * 0.85)})`;
+                              const bg = `hsl(var(--primary) / ${Math.min(0.85, 0.08 + intensity * 0.85)})`;
                               return (
                                 <div
                                   key={c}
@@ -902,7 +934,7 @@ const FinancePage: React.FC = () => {
                         onClick={() => {
                           if (!filteredTransactions.length) return;
                           downloadCsv(
-                            `nexus-finance-${month}.csv`,
+                            `future-finance-${month}.csv`,
                             filteredTransactions.map(t => ({
                               date: t.date,
                               amount: t.amount,

@@ -28,7 +28,7 @@ interface AmbientScenesProps {
 }
 
 const AmbientScenes: React.FC<AmbientScenesProps> = ({ onApplyScene }) => {
-  const [activeScene, setActiveScene] = useLocalStorage<string | null>('nexus-active-scene', null);
+  const [activeScene, setActiveScene] = useLocalStorage<string | null>('future-active-scene', null);
 
   const apply = (scene: ScenePreset) => {
     if (activeScene === scene.id) {

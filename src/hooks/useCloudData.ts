@@ -61,7 +61,31 @@ export function useTasks() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); rewardAction('task_create'); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      rewardAction('task_create');
+    },
+  });
+
+  const addTasks = useMutation({
+    mutationFn: async (tasksToAdd: Array<Omit<Task, 'id' | 'createdAt'>>) => {
+      if (!user) return;
+      if (!tasksToAdd.length) return;
+      const rows = tasksToAdd.map(t => ({
+        user_id: user.id,
+        text: t.text,
+        column_status: t.column,
+        priority: t.priority,
+        due_date: t.dueDate || null,
+        subtasks: t.subtasks,
+      }));
+      const { error } = await supabase.from('tasks').insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      rewardAction('task_create');
+    },
   });
 
   const updateTask = useMutation({
@@ -75,7 +99,7 @@ export function useTasks() {
       }).eq('id', task.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks', user?.id] }),
   });
 
   const deleteTask = useMutation({
@@ -83,10 +107,10 @@ export function useTasks() {
       const { error } = await supabase.from('tasks').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks', user?.id] }),
   });
 
-  return { tasks, isLoading, setTasks, addTask, updateTask, deleteTask };
+  return { tasks, isLoading, setTasks, addTask, addTasks, updateTask, deleteTask };
 }
 
 // ==================== HABITS ====================
@@ -565,7 +589,7 @@ export interface FinanceLimit {
 }
 
 function financeCategoriesCacheKey(userId: string) {
-  return `nexus-finance-categories-v1:${userId}`;
+  return `future-finance-categories-v1:${userId}`;
 }
 
 export function useFinanceCategories() {
@@ -909,3 +933,159 @@ export function useFinance(monthKey: string) {
 
   return { transactions, budget, isLoading, addTransaction, deleteTransaction, setBudget, syncNow };
 }
+
+// ==================== TEMPLATES ====================
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  description: string;
+  tasks: Array<{
+    text: string;
+    column: 'todo' | 'progress' | 'done';
+    priority: 'low' | 'medium' | 'high';
+    dueDate?: string;
+    subtasks: { id: string; text: string; done: boolean }[];
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function useTaskTemplates() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: templates = [], isLoading } = useQuery({
+    queryKey: ['task-templates', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('task_templates')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      return (data || []).map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description || '',
+        tasks: (t.tasks as any[]) || [],
+        createdAt: t.created_at,
+        updatedAt: t.updated_at,
+      })) as TaskTemplate[];
+    },
+    enabled: !!user,
+  });
+
+  const addTemplate = useMutation({
+    mutationFn: async (tpl: { name: string; description: string; tasks: TaskTemplate['tasks'] }) => {
+      if (!user) return;
+      const { error } = await supabase.from('task_templates').insert({
+        user_id: user.id,
+        name: tpl.name,
+        description: tpl.description,
+        tasks: tpl.tasks as any,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['task-templates', user?.id] }),
+  });
+
+  const updateTemplate = useMutation({
+    mutationFn: async (tpl: { id: string; name: string; description: string; tasks: TaskTemplate['tasks'] }) => {
+      const { error } = await supabase.from('task_templates').update({
+        name: tpl.name,
+        description: tpl.description,
+        tasks: tpl.tasks as any,
+      }).eq('id', tpl.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['task-templates', user?.id] }),
+  });
+
+  const deleteTemplate = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('task_templates').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['task-templates', user?.id] }),
+  });
+
+  return { templates, isLoading, addTemplate, updateTemplate, deleteTemplate };
+}
+
+export interface JournalTemplate {
+  id: string;
+  name: string;
+  description: string;
+  text: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function useJournalTemplates() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: templates = [], isLoading } = useQuery({
+    queryKey: ['journal-templates', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('journal_templates')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      return (data || []).map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description || '',
+        text: t.text || '',
+        tags: Array.isArray(t.tags) ? t.tags : [],
+        createdAt: t.created_at,
+        updatedAt: t.updated_at,
+      })) as JournalTemplate[];
+    },
+    enabled: !!user,
+  });
+
+  const addTemplate = useMutation({
+    mutationFn: async (tpl: { name: string; description: string; text: string; tags: string[] }) => {
+      if (!user) return;
+      const { error } = await supabase.from('journal_templates').insert({
+        user_id: user.id,
+        name: tpl.name,
+        description: tpl.description,
+        text: tpl.text,
+        tags: tpl.tags,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['journal-templates', user?.id] }),
+  });
+
+  const updateTemplate = useMutation({
+    mutationFn: async (tpl: { id: string; name: string; description: string; text: string; tags: string[] }) => {
+      const { error } = await supabase.from('journal_templates').update({
+        name: tpl.name,
+        description: tpl.description,
+        text: tpl.text,
+        tags: tpl.tags,
+      }).eq('id', tpl.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['journal-templates', user?.id] }),
+  });
+
+  const deleteTemplate = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('journal_templates').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['journal-templates', user?.id] }),
+  });
+
+  return { templates, isLoading, addTemplate, updateTemplate, deleteTemplate };
+}
+

@@ -15,7 +15,7 @@ interface Note {
 }
 
 const QuickCapture: React.FC = () => {
-  const [notes, setNotes] = useLocalStorage<Note[]>('nexus-notes', []);
+  const [notes, setNotes] = useLocalStorage<Note[]>('future-notes', []);
   const [input, setInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
 

@@ -10,8 +10,8 @@ const AchievementsPage: React.FC = () => {
 
   useEffect(() => {
     const handler = () => setState(getGameState());
-    window.addEventListener('nexus-game-update', handler);
-    return () => window.removeEventListener('nexus-game-update', handler);
+    window.addEventListener('future-game-update', handler);
+    return () => window.removeEventListener('future-game-update', handler);
   }, []);
 
   const defs = useMemo(() => getAchievementDefs(), []);

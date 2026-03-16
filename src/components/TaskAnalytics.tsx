@@ -2,19 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, ResponsiveContainer, XAxis } from 'recharts';
 import { CheckCircle2, ListTodo, TrendingUp, Calendar } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useTasks } from '@/hooks/useCloudData';
 import GlassCard from './GlassCard';
 
-interface Task {
-  id: string;
-  text: string;
-  column: 'todo' | 'progress' | 'done';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-}
-
 const TaskAnalytics: React.FC = () => {
-  const [tasks] = useLocalStorage<Task[]>('nexus-tasks', []);
+  const { tasks } = useTasks();
 
   const today = new Date().toISOString().split('T')[0];
   const todayTasks = tasks.filter(t => t.createdAt.startsWith(today));

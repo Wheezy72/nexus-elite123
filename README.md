@@ -1,4 +1,4 @@
-# Nexus Elite — Personal Productivity Command Center
+# Future — Personal Productivity Command Center
 
 A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Supabase.
 
@@ -17,14 +17,14 @@ A full-stack productivity app built with React, TypeScript, Tailwind CSS, and Su
 - ⏰ **Reminders** — Scheduled with repeat (once/daily/weekly)
 - ⏱️ **Flow Timer** — Pomodoro-style focus sessions
 - 📊 **Stats** — Pomodoro + focus analytics
-- 📵 **Nexus Focus (Android app)** — Notification listener + focus-mode blocking + distraction analytics (local-only)
+- 📵 **Future Focus (Android app)** — Notification listener + focus-mode blocking + distraction analytics (local-only)
 - 📈 **Analytics** — Wellness patterns, trends, correlations (mood/sleep/exercise/tasks)
 - 🎓 **Study Planner** — AI-generated study plans + one-click task creation
 - 💸 **Finance** — Monthly budget + expense tracker
 - 🏆 **Achievements** — Trophy cabinet + level progress
 - 🎮 **Gamification** — Levels 1–50, XP, trophies, animations
-- 🎨 **Customization** — Accent colors, video backgrounds, visual effects
-- 🤖 **Nexus AI (beta)** — Local AI gateway (mock by default). Supports OpenAI/Gemini server-side
+- 🎨 **Customization** — Themes, video backgrounds, visual effects
+- 🤖 **Future AI (beta)** — Local AI gateway (mock by default). Supports OpenAI/Gemini server-side
 - 💾 **Encrypted Backups** — Optional encrypted backup + restore (chat + profile photo)
 - ☁️ **Cloud Sync** — Supabase sync for plaintext wellness data (RLS-protected)
 
@@ -52,8 +52,8 @@ cp backend/.env.example backend/.env
 
 # 3. (Optional) Encrypted profile photos + encrypted backups
 # Create these Supabase Storage buckets:
-#   - nexus-profile
-#   - nexus-backups
+#   - future-profile
+#   - future-backups
 
 # 4. Start dev
 npm run dev

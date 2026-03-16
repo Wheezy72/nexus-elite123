@@ -10,7 +10,7 @@ export interface GameState {
   achievements: string[];
 }
 
-const STORAGE_KEY = 'nexus-game-state';
+const STORAGE_KEY = 'future-game-state';
 const MAX_LEVEL = 50;
 
 function buildLevelThresholds() {
@@ -77,7 +77,7 @@ function getState(): GameState {
 
 function saveState(state: GameState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  window.dispatchEvent(new Event('nexus-game-update'));
+  window.dispatchEvent(new Event('future-game-update'));
 }
 
 function todayKey() {
